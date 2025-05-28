@@ -1,0 +1,26 @@
+**/.DS_Store
+**/node_modules
+**/npm-debug.log
+**/pnpm-debug.log
+
+node_modules
+
+dist
+*.local
+.build
+.test
+
+# https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore
+.vscode/*
+!.vscode/*.example.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+cdk-out.json
+cdk.context.json

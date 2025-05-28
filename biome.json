@@ -1,0 +1,95 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "ignore": [
+      ".cdk.staging",
+      "cdk.out",
+      "cdk-out.json",
+      "cdk.context.json",
+      "build",
+      "coverage",
+      ".build",
+      "dist"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto"
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noBannedTypes": "error",
+        "noUselessThisAlias": "error",
+        "noUselessTypeConstraint": "error",
+        "noForEach": "off",
+        "useOptionalChain": "off",
+        "noUselessConstructor": "off"
+      },
+      "correctness": {
+        "noPrecisionLoss": "error"
+      },
+      "style": {
+        "noNamespace": "error",
+        "useAsConstAssertion": "error",
+        "useBlockStatements": "off",
+        "useImportType": "off",
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off",
+        "useEnumInitializers": "off"
+      },
+      "suspicious": {
+        "noExtraNonNullAssertion": "error",
+        "noMisleadingInstantiator": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "noConsole": "warn",
+        "noExplicitAny": "warn",
+        "noImplicitAnyLet": "warn",
+        "noConstEnum": "warn"
+      },
+      "performance": {
+        "noDelete": "off",
+        "noAccumulatingSpread": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "attributePosition": "auto"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "overrides": [
+    { "include": ["package*.json"], "formatter": { "lineWidth": 320 } },
+    {
+      "include": ["*.yml"],
+      "javascript": { "formatter": { "quoteStyle": "double" } }
+    }
+  ]
+}

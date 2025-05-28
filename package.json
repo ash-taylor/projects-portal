@@ -1,0 +1,21 @@
+{
+  "name": "projects-portal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm -r build && pnpm -r bundle",
+    "cdk-deploy": "pnpm build && cd infra && pnpm cdk deploy \"dev/*\"",
+    "cdk-destroy": "pnpm build && cd infra && pnpm cdk destroy \"dev/*\"",
+    "start:api": "cd api && pnpm start:dev",
+    "start:ui": "cd ui && pnpm dev"
+  },
+  "keywords": [],
+  "author": "Ash Taylor",
+  "license": "MIT",
+  "packageManager": "pnpm@10.10.0",
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "typescript": "~5.8.3"
+  }
+}
