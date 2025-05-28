@@ -24,3 +24,6 @@ dist
 cdk.out
 cdk-out.json
 cdk.context.json
+
+# UI
+.vite
