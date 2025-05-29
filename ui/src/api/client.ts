@@ -5,7 +5,7 @@ import { loadConfig } from './config';
  */
 export class ApiClient {
   private apiUrl: string | null = null;
-  
+
   /**
    * Initialize the API client
    */
@@ -13,7 +13,7 @@ export class ApiClient {
     const config = await loadConfig();
     this.apiUrl = config.apiUrl;
   }
-  
+
   /**
    * Make a GET request to the API
    */
@@ -21,29 +21,29 @@ export class ApiClient {
     if (!this.apiUrl) {
       await this.initialize();
     }
-    
+
     const response = await fetch(`${this.apiUrl}${path}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.statusText}`);
     }
-    
+
     return response.json();
   }
-  
+
   /**
    * Make a POST request to the API
    */
-  async post<T>(path: string, data: any): Promise<T> {
+  async post<T>(path: string, data: unknown): Promise<T> {
     if (!this.apiUrl) {
       await this.initialize();
     }
-    
+
     const response = await fetch(`${this.apiUrl}${path}`, {
       method: 'POST',
       headers: {
@@ -51,11 +51,11 @@ export class ApiClient {
       },
       body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.statusText}`);
     }
-    
+
     return response.json();
   }
 }

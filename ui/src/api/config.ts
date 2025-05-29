@@ -1,5 +1,7 @@
 /**
  * Fetches the application configuration from the config file
+ *
+ * Add parameters here as they are added to the config file
  */
 export interface AppConfig {
   apiUrl: string;
