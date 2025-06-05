@@ -10,6 +10,8 @@ dist
 .build
 .test
 
+.env
+
 # https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore
 .vscode/*
 !.vscode/*.example.json

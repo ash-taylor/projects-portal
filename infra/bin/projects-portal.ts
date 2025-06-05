@@ -7,5 +7,6 @@ const app = new App();
 const stage = new ProjectsPortalStage(app, 'dev');
 
 Tags.of(stage).add('environment', 'development');
+Tags.of(stage).add('application', 'projects-portal');
 
 app.synth();
