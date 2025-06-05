@@ -1,9 +1,19 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import serverlessExpress from '@codegenie/serverless-express';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, Handler } from 'aws-lambda';
+import { APIGatewayProxyHandler, Handler } from 'aws-lambda';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import { AppModule } from './app.module';
+import { ApiConfig } from './config/api-config';
+import { loadEnvConfig } from './config/load-env';
+import { PowertoolsLoggerAdapter } from './utils/logger/powertools-logger-adapter';
+
+const config = loadEnvConfig(ApiConfig);
+
+const logger = new PowertoolsLoggerAdapter(new Logger({ logLevel: 'DEBUG', serviceName: 'API Handler' }));
 
 let server: Handler;
 
@@ -12,14 +22,18 @@ async function bootstrapServer(): Promise<Handler> {
 
   expressApp.disable('x-powered-by');
 
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), { logger });
 
-  app.enableCors({
-    origin: [process.env.UI_DOMAIN],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  });
+  app
+    .setGlobalPrefix(config.apiPrefix)
+    .useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }))
+    .use(cookieParser())
+    .enableCors({
+      origin: [config.uiDomain],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    });
 
   await app.init();
 
@@ -29,10 +43,5 @@ async function bootstrapServer(): Promise<Handler> {
 export const handler: APIGatewayProxyHandler = async (event, context, callback) => {
   server = server ?? (await bootstrapServer());
 
-  const nextEvent: APIGatewayProxyEvent = {
-    ...event,
-    path: event.path.replace(/^\/api/, ''),
-  };
-
-  return server(nextEvent, context, callback);
+  return server(event, context, callback);
 };
