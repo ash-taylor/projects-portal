@@ -65,7 +65,7 @@ class ApiClient {
   }
 
   private shouldAttemptRefresh(response: AxiosResponse): boolean {
-    return [401, 403].includes(response.status) && !response.config.url?.includes('/auth/refresh');
+    return response.status === 401 && !response.config.url?.includes('/auth/refresh');
   }
 }
 
