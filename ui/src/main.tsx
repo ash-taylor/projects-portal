@@ -1,20 +1,23 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
-import { api } from './api';
+import { apiClient } from './api/api.ts';
+import { websiteBaseName } from './config/config.ts';
 import { AuthProvider } from './context/auth/authContext.tsx';
 
 import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 
 // Initialize the API client
-api.initialize();
+apiClient.initialize();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <BrowserRouter basename={websiteBaseName}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 );
