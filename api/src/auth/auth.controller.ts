@@ -41,6 +41,13 @@ export class AuthController {
     return await this.authService.logout(req, res);
   }
 
+  @Get('me')
+  @Roles(Role.Admin, Role.User)
+  @UseGuards(AuthGuard)
+  async me(@Req() req: Request) {
+    return await this.authService.returnLoggedInUserInfo(req);
+  }
+
   // TEST ROUTE
   @Get()
   @Roles(Role.Admin)

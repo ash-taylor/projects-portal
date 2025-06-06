@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api';
+import { Container, Header } from '@cloudscape-design/components';
+import { useEffect, useState } from 'react';
+import { apiClient } from '../api';
 
 export function ApiExample() {
   const [message, setMessage] = useState<string>('Loading...');
@@ -8,8 +9,9 @@ export function ApiExample() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const data = await api.get<{ message: string }>('/');
-        setMessage(data.message);
+        // const data = await api.get<{ secret: string }>('/auth', true);
+        const response = await apiClient.makeRequest<{ secret: string }>('/auth', { method: 'get' }, true);
+        setMessage(response.data.secret);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
         setMessage('Failed to load data');
@@ -20,13 +22,8 @@ export function ApiExample() {
   }, []);
 
   return (
-    <div className="api-example">
-      <h2>API Response</h2>
-      {error ? (
-        <p className="error">Error: {error}</p>
-      ) : (
-        <p>{message}</p>
-      )}
-    </div>
+    <Container header={<Header variant="h1">API Example</Header>} variant="default">
+      {error ? <p className="error">Error: {error}</p> : <p>{message}</p>}
+    </Container>
   );
 }

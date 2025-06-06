@@ -18,15 +18,15 @@ export class AuthModule implements NestModule {
       .apply(IdTokenMiddleware)
       .exclude(
         {
-          path: 'signup',
+          path: 'auth/signup',
           method: RequestMethod.POST,
         },
         {
-          path: 'signin',
+          path: 'auth/signin',
           method: RequestMethod.POST,
         },
         {
-          path: 'verify',
+          path: 'auth/verify',
           method: RequestMethod.POST,
         },
       )

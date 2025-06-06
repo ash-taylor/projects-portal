@@ -47,7 +47,7 @@ export class AuthService implements OnModuleInit {
     private readonly authCookieService: AuthCookieService,
     private readonly secretManagerService: SecretsManagerService,
   ) {
-    this.log.debug('AuthService Initializing');
+    this.log.log('AuthService Initializing');
 
     this.cognitoClientId = this.configService.getOrThrow('cognitoClientId');
     this.cognitoUserPoolId = this.configService.getOrThrow('cognitoUserPoolId');
@@ -156,7 +156,10 @@ export class AuthService implements OnModuleInit {
 
       this.authCookieService.setHttpOnlyCookie('access_token', AccessToken, res, { maxAge: 1000 * 60 * 5 }); // 5 minutes
       this.authCookieService.setHttpOnlyCookie('id_token', IdToken, res, { maxAge: 1000 * 60 * 60 }); // 1 hour
-      this.authCookieService.setHttpOnlyCookie('refresh_token', RefreshToken, res, { maxAge: 1000 * 60 * 60 * 24 }); // 1 Day
+      this.authCookieService.setHttpOnlyCookie('refresh_token', RefreshToken, res, {
+        maxAge: 1000 * 60 * 60 * 24,
+        path: 'auth',
+      }); // 1 Day
 
       return { message: 'success' };
     } catch (error: unknown) {
@@ -268,6 +271,26 @@ export class AuthService implements OnModuleInit {
 
       throw new InternalServerErrorException('Error whilst logging out user');
     }
+  }
+
+  async returnLoggedInUserInfo(req: Request) {
+    const encodedIdToken = this.tokenService.extractToken(req, 'id_token', false);
+
+    if (!encodedIdToken) throw new UnauthorizedException();
+
+    const {
+      email,
+      given_name: firstName,
+      family_name: lastName,
+      'cognito:groups': roles,
+    } = await this.tokenService.decodeJwt(encodedIdToken);
+
+    return {
+      email,
+      firstName,
+      lastName,
+      roles,
+    };
   }
 
   // To delete
