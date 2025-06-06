@@ -1,6 +1,6 @@
 import { Button, Container, Form, FormField, Header, Input, SpaceBetween } from '@cloudscape-design/components';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/auth/authContext';
 import { FullPageCenteredBoxLayout } from '../../layouts/FullPageCentredBoxLayout';
 import { LoadingLayout } from '../../layouts/LoadingLayout';
@@ -9,6 +9,9 @@ import { ErrorBox } from '../global/ErrorBox';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || '/';
 
   const [error, setError] = useState<Error>();
   const [loading, setLoading] = useState(false);
@@ -28,7 +31,7 @@ const LoginPage = () => {
 
       await login({ email, password });
 
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err as Error);
     } finally {
