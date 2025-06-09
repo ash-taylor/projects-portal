@@ -11,12 +11,18 @@ import {
   UserPoolGroup,
   VerificationEmailStyle,
 } from 'aws-cdk-lib/aws-cognito';
+import { SecurityGroup, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Code, Function as LambdaFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 const solutionRootDir = `${__dirname}/../../../`;
+
+export interface BackendStackProps extends StackProps {
+  vpc: Vpc;
+  lambdaSecurityGroup: SecurityGroup;
+}
 
 export class BackendStack extends Stack {
   public readonly api: LambdaRestApi;
@@ -26,7 +32,7 @@ export class BackendStack extends Stack {
   public readonly cognitoUserPool: UserPool;
   public readonly cognitoUserPoolClient: UserPoolClient;
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props: BackendStackProps) {
     super(scope, id, {
       ...props,
       description: 'Contains backend API GW, API Handler and Cognito Resources',
@@ -38,6 +44,10 @@ export class BackendStack extends Stack {
       handler: 'index.handler',
       code: Code.fromAsset(path.join(solutionRootDir, 'api/dist')),
       timeout: Duration.seconds(30),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      ipv6AllowedForDualStack: true,
     });
 
     this.api = new LambdaRestApi(this, 'projects-portal-api', {
