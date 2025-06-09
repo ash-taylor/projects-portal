@@ -33,7 +33,6 @@ export class ContentDistributionStack extends Stack {
     super(scope, id, {
       ...props,
       description: 'Contains the UI Deployment and Cloudfront Distribution',
-      crossRegionReferences: true,
     });
 
     const websiteBucket = new Bucket(this, 'projects-portal-website-bucket', {
