@@ -41,6 +41,7 @@ function createStageInfra(stage: Stage) {
   });
 
   storageStack.addDependency(Stack.of(vpc));
+  const { rdsInstance } = storageStack;
 
   const { cloudfrontDistribution } = new ContentDistributionStack(stage, 'ProjectsPortalContentDistributionStack', {
     apiDomain: apiDomain,
@@ -54,6 +55,9 @@ function createStageInfra(stage: Stage) {
     cognitoUserPoolClientId: cognitoUserPoolClient.userPoolClientId,
     cognitoUserPoolClientSecretId: apiAppClientSecret.secretArn,
     apiHandlerLambda: apiHandler,
+    rdsInstance,
+    vpc,
+    lambdaSecurityGroup,
     env: { region: MAIN_REGION },
     crossRegionReferences: true,
   });

@@ -17,13 +17,15 @@ export interface StorageStackProps extends StackProps {
 }
 
 export class StorageStack extends Stack {
+  public readonly rdsInstance: DatabaseInstance;
+
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, {
       ...props,
       description: 'Contains the RDS Database',
     });
 
-    new DatabaseInstance(this, 'projects-portal-database', {
+    this.rdsInstance = new DatabaseInstance(this, 'projects-portal-database', {
       databaseName: 'ProjectsPortal',
       engine: DatabaseInstanceEngine.postgres({ version: PostgresEngineVersion.VER_17_5 }),
       autoMinorVersionUpgrade: true,
