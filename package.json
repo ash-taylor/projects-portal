@@ -12,7 +12,8 @@
     "cdk-deploy": "cd infra && pnpm cdk deploy \"Projects-Portal/*\" --require-approval never --concurrency 4",
     "cdk-destroy": "cd infra && pnpm cdk destroy \"Projects-Portal/*\"",
     "start:api": "cd api && pnpm start:dev",
-    "start:ui": "cd ui && pnpm dev"
+    "start:ui": "cd ui && pnpm dev",
+    "start:local-db": "cd local-db && docker compose up -d"
   },
   "pnpm": {
     "overrides": {
