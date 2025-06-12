@@ -6,12 +6,13 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 import { SetApiLambdaEnvironmentHandlerProps } from './set-api-lambda-environment-handler.props';
+import { ApiHandlerEnv } from '../../stacks/deployment.stack';
 
 const solutionRootDir = `${__dirname}/../../../../`;
 
 export interface SetApiLambdaEnvironmentProps {
   apiHandlerLambda: LambdaFunction;
-  environment: { [key: string]: string };
+  environment: ApiHandlerEnv;
 }
 
 export class SetApiLambdaEnvironment extends Construct {

@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiHandlerConfig } from './api-handler-config';
 
 export class ApiConfig implements ApiHandlerConfig {
@@ -26,4 +26,38 @@ export class ApiConfig implements ApiHandlerConfig {
   @IsString()
   @Expose({ name: 'UI_DOMAIN' })
   uiDomain!: string;
+
+  @IsString()
+  @Expose({ name: 'ENVIRONMENT' })
+  environment!: string;
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'DB_HOST' })
+  dbHost?: string;
+
+  @IsNumber()
+  @IsOptional()
+  @Expose({ name: 'DB_PORT' })
+  dbPort?: number;
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'DB_USERNAME' })
+  dbUser?: string;
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'DB_PASSWORD' })
+  dbPassword?: string;
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'DB_NAME' })
+  dbName?: string;
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'RDS_SECRET_ID' })
+  rdsSecretId?: string;
 }
