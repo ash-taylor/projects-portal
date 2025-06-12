@@ -34,14 +34,11 @@ function createStageInfra(stage: Stage) {
     },
   );
 
-  const storageStack = new StorageStack(stage, 'ProjectsPortalStorageStack', {
+  const { rdsInstance } = new StorageStack(stage, 'ProjectsPortalStorageStack', {
     env: { region: MAIN_REGION },
     vpc,
     rdsSecurityGroup,
   });
-
-  storageStack.addDependency(Stack.of(vpc));
-  const { rdsInstance } = storageStack;
 
   const { cloudfrontDistribution } = new ContentDistributionStack(stage, 'ProjectsPortalContentDistributionStack', {
     apiDomain: apiDomain,

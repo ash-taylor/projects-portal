@@ -4,8 +4,8 @@ DROP TABLE IF EXISTS customer;
 DROP TYPE IF EXISTS project_status;
 DROP TYPE IF EXISTS user_role;
 
-CREATE TYPE project_status AS ENUM ('PLANNING', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD');
-CREATE TYPE user_role AS ENUM ('ADMIN', 'USER');
+CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'on_hold', 'cancelled');
+CREATE TYPE user_role AS ENUM ('user', 'admin');
 
 CREATE TABLE customer (
 	id UUID PRIMARY KEY,

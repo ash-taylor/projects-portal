@@ -23,6 +23,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ApiHandlerConfig } from '../config/api-handler-config';
+import { UsersService } from '../users/users.service';
 import { AuthCookieService } from './auth-cookie.service';
 import { SignInDto } from './dtos/signin.dto';
 import { SignupDto } from './dtos/signup.dto';
@@ -46,6 +47,7 @@ export class AuthService implements OnModuleInit {
     private readonly tokenService: TokenService,
     private readonly authCookieService: AuthCookieService,
     private readonly secretManagerService: SecretsManagerService,
+    private readonly usersService: UsersService,
   ) {
     this.log.log('AuthService Initializing');
 
@@ -81,6 +83,7 @@ export class AuthService implements OnModuleInit {
       });
 
       const response = await this.client.send(signupCommand);
+      if (!response.UserSub) throw new InternalServerErrorException('Error whilst signing up user');
 
       const groupCommands: AdminAddUserToGroupCommand[] = [
         new AdminAddUserToGroupCommand({ GroupName: Role.User, UserPoolId: this.cognitoUserPoolId, Username: email }),
@@ -97,6 +100,15 @@ export class AuthService implements OnModuleInit {
       }
 
       for (let i = 0; i < groupCommands.length; i++) await this.client.send(groupCommands[i]);
+
+      await this.usersService.createUser({
+        sub: response.UserSub,
+        email,
+        firstName,
+        lastName,
+        active: false,
+        roles: [Role.User, ...(admin ? [Role.Admin] : [])],
+      });
 
       return {
         status: 'success',
@@ -216,18 +228,20 @@ export class AuthService implements OnModuleInit {
   }
 
   async verifyUser({ email, confirmationCode }: VerifyDto) {
-    this.log.log('Verifying user');
-
-    const command = new ConfirmSignUpCommand({
-      ClientId: this.cognitoClientId,
-      Username: email,
-      ConfirmationCode: confirmationCode,
-      ForceAliasCreation: true,
-      SecretHash: this.generateSecretHash(email),
-    });
-
     try {
+      this.log.log('Verifying user');
+
+      const command = new ConfirmSignUpCommand({
+        ClientId: this.cognitoClientId,
+        Username: email,
+        ConfirmationCode: confirmationCode,
+        ForceAliasCreation: true,
+        SecretHash: this.generateSecretHash(email),
+      });
+
       const response = await this.client.send(command);
+
+      await this.usersService.verifyUser(email);
 
       return {
         status: 'success',

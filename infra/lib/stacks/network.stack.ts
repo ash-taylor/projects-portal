@@ -38,13 +38,14 @@ export class NetworkStack extends Stack {
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
           ipv6AssignAddressOnCreation: true,
         },
+        // RDS requires min of 2 AZs even with single AZ deployment
         {
-          name: 'Projects-Portal-RDS-SN-A',
+          name: 'Projects-Portal-RDS-1',
           subnetType: SubnetType.PRIVATE_ISOLATED,
           ipv6AssignAddressOnCreation: false,
         },
         {
-          name: 'Projects-Portal-RDS-SN-B',
+          name: 'Projects-Portal-RDS-2',
           subnetType: SubnetType.PRIVATE_ISOLATED,
           ipv6AssignAddressOnCreation: false,
         },

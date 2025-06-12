@@ -49,8 +49,8 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
     await sql`DROP TYPE IF EXISTS project_status;`;
     await sql`DROP TYPE IF EXISTS user_role;`;
 
-    await sql`CREATE TYPE project_status AS ENUM ('PLANNING', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD');`;
-    await sql`CREATE TYPE user_role AS ENUM ('ADMIN', 'USER');`;
+    await sql`CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'on_hold');`;
+    await sql`CREATE TYPE user_role AS ENUM ('user', 'admin');`;
 
     await sql`
       CREATE TABLE customer (
