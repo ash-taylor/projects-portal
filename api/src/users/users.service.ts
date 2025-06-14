@@ -1,6 +1,8 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UpdateUserDto } from '../auth/dtos/update-user.dto';
+import { UserResponseDto } from './dtos/user-response.dto';
 import { User } from './models/user.entity';
 import { IUser } from './models/user.interface';
 
@@ -14,11 +16,12 @@ export class UsersService {
     this.log.log('UsersService Initializing');
   }
 
-  async createUser(user: IUser) {
+  async createUser(user: IUser): Promise<UserResponseDto> {
     try {
       this.log.log('Creating user entity');
 
       const { sub, firstName, lastName, email, roles, active } = user;
+
       const newUser = this.usersRepository.create({
         sub,
         first_name: firstName,
@@ -27,34 +30,121 @@ export class UsersService {
         user_roles: roles,
         active,
       });
+
+      // Auth provider (Cognito) will be single source of truth for users
+      if (await this.usersRepository.exists({ where: [{ email }, { sub }] })) {
+        await this.usersRepository.delete([{ email }, { sub }]);
+      }
+
       this.log.log('Saving user entity');
-      return this.usersRepository.save(newUser);
+      const savedUser = await this.usersRepository.save(newUser);
+
+      return this._transformUserToDto(savedUser);
     } catch (error) {
       this.log.error(error);
       throw new InternalServerErrorException();
     }
   }
 
-  async verifyUser(email: string) {
+  async verifyUser(email: string): Promise<UserResponseDto> {
     try {
       this.log.log('Updating user active status');
+
       const user = await this.usersRepository.findOneBy({ email });
       if (!user) throw new NotFoundException();
+
       user.active = true;
-      return await this.usersRepository.save(user);
+
+      const updatedUser = await this.usersRepository.save(user);
+
+      return this._transformUserToDto(updatedUser);
     } catch (error) {
       this.log.error(error);
       throw new InternalServerErrorException();
     }
   }
 
-  async getUsers() {
+  async getUserByEmail(email: string): Promise<UserResponseDto> {
+    try {
+      this.log.log('Getting user by email');
+
+      const user = await this.usersRepository.findOne({ where: { email }, relations: ['project', 'project.customer'] });
+      if (!user) throw new NotFoundException();
+
+      return this._transformUserToDto(user);
+    } catch (error) {
+      this.log.error(error);
+      if (error instanceof NotFoundException) throw new NotFoundException();
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getAllUsers(): Promise<UserResponseDto[]> {
     try {
       this.log.log('Getting all users');
-      return await this.usersRepository.find();
+
+      const users = await this.usersRepository.find({ relations: ['project', 'project.customer'] });
+
+      return users.map((user) => this._transformUserToDto(user));
     } catch (error) {
       this.log.error(error);
       throw new InternalServerErrorException();
     }
+  }
+
+  async updateUser(dto: UpdateUserDto & { sub: string }) {
+    this.log.log('Updating user in database');
+    const { sub, firstName, lastName, email } = dto;
+
+    const user = await this.usersRepository.findOneBy({ sub });
+    if (!user) throw new NotFoundException();
+
+    user.email = email || user.email;
+    user.first_name = firstName || user.first_name;
+    user.last_name = lastName || user.last_name;
+
+    return this._transformUserToDto(await this.usersRepository.save(user));
+  }
+  async deleteUser(email: string): Promise<UserResponseDto>;
+  async deleteUser(sub: string): Promise<UserResponseDto>;
+  async deleteUser(sub?: string, email?: string) {
+    this.log.log('Deleting user from database');
+
+    const user = await this.usersRepository.findOneBy([{ sub }, { email }]);
+    if (!user) throw new NotFoundException();
+
+    return this._transformUserToDto(await this.usersRepository.remove(user));
+  }
+
+  private _transformUserToDto(user: User): UserResponseDto {
+    return {
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      userRoles: user.user_roles,
+      active: user.active,
+      project: user.project && {
+        id: user.project.id,
+        name: user.project.name,
+        active: user.project.active,
+        status: user.project.status,
+        details: user.project.details,
+        users: user.project.users.map((user: User) => {
+          return {
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+            userRoles: user.user_roles,
+            active: user.active,
+          };
+        }),
+        customer: {
+          id: user.project.customer.id,
+          name: user.project.customer.name,
+          active: user.project.customer.active,
+          details: user.project.customer.details,
+        },
+      },
+    };
   }
 }

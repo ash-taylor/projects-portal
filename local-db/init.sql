@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 DROP TABLE IF EXISTS "user";
 DROP TABLE IF EXISTS project;
 DROP TABLE IF EXISTS customer;
@@ -8,7 +10,7 @@ CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'on_
 CREATE TYPE user_role AS ENUM ('user', 'admin');
 
 CREATE TABLE customer (
-	id UUID PRIMARY KEY,
+	id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 	name VARCHAR(50) NOT NULL UNIQUE,
 	active BOOLEAN NOT NULL DEFAULT TRUE,
 	details TEXT
@@ -18,7 +20,7 @@ CREATE INDEX idx_customer_id ON customer (id);
 CREATE INDEX idx_customer_name ON customer (name);
 
 CREATE TABLE project (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(50) NOT NULL UNIQUE,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     status project_status NOT NULL,

@@ -1,14 +1,15 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiClient } from '../../api';
-import type { SuccessResponse } from '../../components/auth/types/SuccessResponse';
+import type { MessageResponse } from '../../components/auth/models/MessageResponse';
 import type { User } from '../../models/User';
 
 type AuthContextType = {
   user?: User;
   loading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<SuccessResponse | undefined>;
-  logout: () => Promise<SuccessResponse | undefined>;
+  login: (credentials: { email: string; password: string }) => Promise<User | undefined>;
+  logout: () => Promise<MessageResponse | undefined>;
   isLoggedIn: () => boolean;
+  updateUser: (user: User) => void;
   error?: Error;
 };
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => new Promise(() => {}),
   logout: () => new Promise(() => {}),
   isLoggedIn: () => false,
+  updateUser: () => {},
   error: undefined,
 });
 
@@ -26,12 +28,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User>();
   const [error, setError] = useState<Error>();
 
-  const login = async ({
-    email,
-    password,
-  }: { email: string; password: string }): Promise<SuccessResponse | undefined> => {
+  const login = async ({ email, password }: { email: string; password: string }) => {
     try {
-      const loginResponse = await apiClient.makeRequest<SuccessResponse>(
+      const loginResponse = await apiClient.makeRequest<User>(
         '/auth/signin',
         { method: 'post', data: { email, password } },
         true,
@@ -48,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      const response = await apiClient.makeRequest<SuccessResponse>('/auth/logout', { method: 'post' }, true);
+      const response = await apiClient.makeRequest<MessageResponse>('/auth/logout', { method: 'post' }, true);
       return response.data;
     } catch (error) {
       setError(error as Error);
@@ -78,8 +77,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchUser();
   }, [getUser]);
 
+  const updateUser = (user: User) => setUser(user);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoggedIn, loading, error }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, logout, isLoggedIn, loading, error, updateUser }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 

@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { SecretsManagerService } from './auth/secrets-manager.service';
 import { ApiConfig } from './config/api-config';
 import { ApiHandlerConfig } from './config/api-handler-config';
 import { loadEnvConfig } from './config/load-env';
+import { CustomersModule } from './customers/customers.module';
 import { ProjectsModule } from './projects/projects.module';
 import { UsersModule } from './users/users.module';
 
@@ -19,6 +18,7 @@ const dbConfig: TypeOrmModuleOptions = { type: 'postgres', synchronize: false, a
     AuthModule,
     ProjectsModule,
     UsersModule,
+    CustomersModule,
     TypeOrmModule.forRootAsync({
       imports: [AuthModule, ConfigModule],
       inject: [SecretsManagerService, ConfigService],
@@ -59,7 +59,5 @@ const dbConfig: TypeOrmModuleOptions = { type: 'postgres', synchronize: false, a
       },
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService, SecretsManagerService],
 })
 export class AppModule {}
