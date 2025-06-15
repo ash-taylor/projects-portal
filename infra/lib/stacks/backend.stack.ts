@@ -70,7 +70,7 @@ export class BackendStack extends Stack {
       userVerification: {
         emailSubject: 'Verify your email!',
         emailBody:
-          '<h1>Welcome {username} to the Projects Portal</h1><br><br><p>Thanks for signing up to the Projects Portal Application! <br>Your verification code is {####}',
+          '<h1>Welcome to the Projects Portal</h1><br><p>Thanks for signing up to the Projects Portal Application! <br>Your verification code is {####}',
         emailStyle: VerificationEmailStyle.CODE,
       },
       signInAliases: { email: true },
@@ -121,7 +121,11 @@ export class BackendStack extends Stack {
 
     const cfnApiAppClient = this.cognitoUserPoolClient.node.defaultChild as CfnUserPoolClient;
     cfnApiAppClient.refreshTokenRotation = { feature: 'ENABLED', retryGracePeriodSeconds: 30 };
-    cfnApiAppClient.explicitAuthFlows = ['ALLOW_ADMIN_USER_PASSWORD_AUTH', 'ALLOW_USER_PASSWORD_AUTH'];
+    cfnApiAppClient.explicitAuthFlows = [
+      'ALLOW_ADMIN_USER_PASSWORD_AUTH',
+      'ALLOW_USER_PASSWORD_AUTH',
+      'ALLOW_USER_AUTH',
+    ];
 
     this.apiHandler.addToRolePolicy(
       new PolicyStatement({
@@ -129,6 +133,7 @@ export class BackendStack extends Stack {
           'cognito-idp:AdminInitiateAuth',
           'cognito-idp:AdminGetUser',
           'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminDeleteUser',
           'cognito-idp:ConfirmSignUp',
           'cognito-idp:SignUp',
           'cognito-idp:RevokeToken',

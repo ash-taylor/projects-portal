@@ -11,7 +11,7 @@ import { TokenService } from './token.service';
   imports: [UsersModule],
   controllers: [AuthController],
   providers: [AuthService, SecretsManagerService, AuthCookieService, TokenService],
-  exports: [SecretsManagerService],
+  exports: [SecretsManagerService, TokenService],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

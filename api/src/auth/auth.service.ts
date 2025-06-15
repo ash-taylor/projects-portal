@@ -1,9 +1,13 @@
 import { createHmac } from 'node:crypto';
 import {
   AdminAddUserToGroupCommand,
+  AdminDeleteUserCommand,
   AdminGetUserCommand,
   AdminInitiateAuthCommand,
+  AdminUpdateUserAttributesCommand,
+  AttributeType,
   AuthFlowType,
+  ChallengeNameType,
   CognitoIdentityProviderClient,
   ConfirmSignUpCommand,
   GetTokensFromRefreshTokenCommand,
@@ -23,11 +27,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ApiHandlerConfig } from '../config/api-handler-config';
+import { UserResponseDto } from '../users/dtos/user-response.dto';
 import { UsersService } from '../users/users.service';
 import { AuthCookieService } from './auth-cookie.service';
+import { MessageResponseDto } from './dtos/message-response.dto';
 import { SignInDto } from './dtos/signin.dto';
+import { SignupResponseDto } from './dtos/signup-response.dto';
 import { SignupDto } from './dtos/signup.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 import { VerifyDto } from './dtos/verify.dto';
+import { AuthStatus } from './models/auth-status.enum';
 import { Role } from './models/role.enum';
 import { SecretsManagerService } from './secrets-manager.service';
 import { TokenService } from './token.service';
@@ -61,10 +70,10 @@ export class AuthService implements OnModuleInit {
     this.cognitoAppClientSecret = await this.secretManagerService.getSecret(this.cognitoAppClientSecretId);
   }
 
-  async signup({ email, password, firstName, lastName, admin }: SignupDto) {
-    this.log.log('Signing up new user');
-
+  async signup({ email, password, firstName, lastName, admin }: SignupDto, res: Response): Promise<SignupResponseDto> {
     try {
+      this.log.log('Signing up new user');
+
       const signupCommand = new SignUpCommand({
         ClientId: this.cognitoClientId,
         Username: email,
@@ -83,6 +92,7 @@ export class AuthService implements OnModuleInit {
       });
 
       const response = await this.client.send(signupCommand);
+
       if (!response.UserSub) throw new InternalServerErrorException('Error whilst signing up user');
 
       const groupCommands: AdminAddUserToGroupCommand[] = [
@@ -110,8 +120,12 @@ export class AuthService implements OnModuleInit {
         roles: [Role.User, ...(admin ? [Role.Admin] : [])],
       });
 
+      if (response.Session) {
+        this.authCookieService.setHttpOnlyCookie('session', response.Session, res, { maxAge: 1000 * 60 * 60 }); // 1 hour
+      }
+
       return {
-        status: 'success',
+        status: AuthStatus.SUCCESS,
         message: 'User created successfully',
         userVerificationStatus: response.UserConfirmed ? UserStatusType.CONFIRMED : UserStatusType.UNCONFIRMED,
       };
@@ -123,24 +137,35 @@ export class AuthService implements OnModuleInit {
 
         if (user.userStatus === UserStatusType.UNCONFIRMED)
           throw new ConflictException({
-            status: 'pending_confirmation',
+            status: AuthStatus.PENDING,
             message: 'User exists but not verified',
             userVerificationStatus: UserStatusType.UNCONFIRMED,
           });
 
         if (user.userStatus === UserStatusType.CONFIRMED)
           throw new ConflictException({
-            status: 'already_exists',
+            status: AuthStatus.CONFLICT,
             message: 'User already exists',
             userVerificationStatus: UserStatusType.CONFIRMED,
           });
+
+        if (error instanceof InternalServerErrorException) {
+          await this.client.send(
+            new AdminDeleteUserCommand({
+              UserPoolId: this.cognitoUserPoolId,
+              Username: email,
+            }),
+          );
+
+          throw new InternalServerErrorException('Error whilst signing up user');
+        }
       }
 
-      throw new InternalServerErrorException('Error whilst signing up user');
+      throw new InternalServerErrorException('');
     }
   }
 
-  async userSignIn({ email, password }: SignInDto, res: Response): Promise<{ message: 'success' }> {
+  async userSignIn({ email, password }: SignInDto, res: Response): Promise<UserResponseDto> {
     this.log.log('Signing in user');
 
     try {
@@ -173,10 +198,8 @@ export class AuthService implements OnModuleInit {
         path: 'auth',
       }); // 1 Day
 
-      return { message: 'success' };
+      return await this.usersService.getUserByEmail(email);
     } catch (error: unknown) {
-      this.log.error(error);
-
       if ((error as Error)?.name === 'UserNotFoundException') throw new UnauthorizedException();
 
       if ((error as Error)?.name === 'NotAuthorizedException') throw new UnauthorizedException();
@@ -185,9 +208,10 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async refresh(req: Request, res: Response) {
-    this.log.log('Refreshing tokens');
+  async refresh(req: Request, res: Response): Promise<MessageResponseDto> {
     try {
+      this.log.log('Refreshing tokens');
+
       const encodedRefreshToken = this.tokenService.extractToken(req, 'refresh_token', false);
       const encodedIdToken = this.tokenService.extractToken(req, 'id_token', false);
 
@@ -227,26 +251,62 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async verifyUser({ email, confirmationCode }: VerifyDto) {
+  async verifyUser({ email, confirmationCode }: VerifyDto, req: Request, res: Response): Promise<UserResponseDto> {
     try {
       this.log.log('Verifying user');
 
-      const command = new ConfirmSignUpCommand({
+      const session = this.tokenService.extractToken(req, 'session', false);
+
+      const verifyResponse = await this.client.send(
+        new ConfirmSignUpCommand({
+          ClientId: this.cognitoClientId,
+          Username: email,
+          ConfirmationCode: confirmationCode,
+          ForceAliasCreation: true,
+          SecretHash: this.generateSecretHash(email),
+          Session: session,
+        }),
+      );
+
+      if (!session) {
+        await this.usersService.verifyUser(email);
+        return await this.usersService.getUserByEmail(email);
+      }
+
+      const command = new AdminInitiateAuthCommand({
         ClientId: this.cognitoClientId,
-        Username: email,
-        ConfirmationCode: confirmationCode,
-        ForceAliasCreation: true,
-        SecretHash: this.generateSecretHash(email),
+        UserPoolId: this.cognitoUserPoolId,
+        AuthFlow: 'USER_AUTH',
+        AuthParameters: {
+          USERNAME: email,
+          EMAIL_OTP: confirmationCode,
+          SECRET_HASH: this.generateSecretHash(email),
+          PREFERRED_CHALLENGE: ChallengeNameType.EMAIL_OTP,
+        },
+        Session: verifyResponse.Session,
       });
 
       const response = await this.client.send(command);
 
+      if (
+        !response.AuthenticationResult?.AccessToken ||
+        !response.AuthenticationResult?.IdToken ||
+        !response.AuthenticationResult?.RefreshToken
+      )
+        throw new UnauthorizedException();
+
+      const { AccessToken, IdToken, RefreshToken } = response.AuthenticationResult;
+
+      this.authCookieService.setHttpOnlyCookie('access_token', AccessToken, res, { maxAge: 1000 * 60 * 5 }); // 5 minutes
+      this.authCookieService.setHttpOnlyCookie('id_token', IdToken, res, { maxAge: 1000 * 60 * 60 }); // 1 hour
+      this.authCookieService.setHttpOnlyCookie('refresh_token', RefreshToken, res, {
+        maxAge: 1000 * 60 * 60 * 24,
+        path: 'auth',
+      }); // 1 Day
+
       await this.usersService.verifyUser(email);
 
-      return {
-        status: 'success',
-        session: response.Session,
-      };
+      return await this.usersService.getUserByEmail(email);
     } catch (error: unknown) {
       this.log.error(error);
 
@@ -258,10 +318,95 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async logout(req: Request, res: Response) {
-    this.log.log('Logging out user');
-
+  async updateLoggedInUserInfo(dto: UpdateUserDto, req: Request) {
     try {
+      this.log.log('Updating logged in user info');
+
+      const sub = req.userId?.sub;
+
+      if (!sub) throw new UnauthorizedException();
+
+      const UserAttributes: AttributeType[] = [];
+      if (dto.firstName) UserAttributes.push({ Name: 'given_name', Value: dto.firstName });
+      if (dto.lastName) UserAttributes.push({ Name: 'family_name', Value: dto.lastName });
+      if (dto.email)
+        UserAttributes.push(
+          ...[
+            { Name: 'email', Value: dto.email },
+            { Name: 'email_verified', Value: 'true' },
+          ],
+        );
+
+      const command = new AdminUpdateUserAttributesCommand({
+        UserPoolId: this.cognitoUserPoolId,
+        Username: sub,
+        UserAttributes,
+      });
+
+      this.log.log('Updating cognito user');
+      await this.client.send(command);
+
+      return await this.usersService.updateUser({ sub, ...dto });
+    } catch (error) {
+      this.log.error(error);
+
+      throw new InternalServerErrorException('Error whilst updating user');
+    }
+  }
+
+  async deleteUser(email: string) {
+    try {
+      this.log.log('Deleting user');
+
+      await this.client.send(
+        new AdminDeleteUserCommand({
+          UserPoolId: this.cognitoUserPoolId,
+          Username: email,
+        }),
+      );
+
+      return await this.usersService.deleteUser(email);
+    } catch (error) {
+      this.log.error(error);
+
+      throw new InternalServerErrorException('Error whilst deleting user');
+    }
+  }
+
+  async deleteLoggedInUser(req: Request, res: Response) {
+    try {
+      this.log.log('Deleting logged in user');
+
+      const sub = req.userId?.sub;
+
+      if (!sub) throw new UnauthorizedException();
+
+      await this.client.send(
+        new AdminDeleteUserCommand({
+          UserPoolId: this.cognitoUserPoolId,
+          Username: sub,
+        }),
+      );
+
+      this.authCookieService.clearHttpOnlyCookie('access_token', res, { maxAge: 1000 * 60 * 5 });
+      this.authCookieService.clearHttpOnlyCookie('id_token', res, { maxAge: 1000 * 60 * 60 });
+      this.authCookieService.clearHttpOnlyCookie('refresh_token', res, {
+        maxAge: 1000 * 60 * 60 * 24,
+        path: 'auth',
+      });
+
+      return await this.usersService.deleteUser(sub);
+    } catch (error) {
+      this.log.error(error);
+
+      throw new InternalServerErrorException('Error whilst deleting user');
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<MessageResponseDto> {
+    try {
+      this.log.log('Logging out user');
+
       const encodedRefreshToken = this.tokenService.extractToken(req, 'refresh_token', false);
 
       await this.client.send(
@@ -287,24 +432,14 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async returnLoggedInUserInfo(req: Request) {
+  async returnLoggedInUserInfo(req: Request): Promise<UserResponseDto> {
     const encodedIdToken = this.tokenService.extractToken(req, 'id_token', false);
 
     if (!encodedIdToken) throw new UnauthorizedException();
 
-    const {
-      email,
-      given_name: firstName,
-      family_name: lastName,
-      'cognito:groups': roles,
-    } = await this.tokenService.decodeJwt(encodedIdToken);
+    const { email } = await this.tokenService.decodeJwt(encodedIdToken);
 
-    return {
-      email,
-      firstName,
-      lastName,
-      roles,
-    };
+    return await this.usersService.getUserByEmail(email);
   }
 
   // To delete
@@ -314,14 +449,14 @@ export class AuthService implements OnModuleInit {
   }
 
   private async getUser(email: string) {
-    this.log.log('Getting user');
-
-    const command = new AdminGetUserCommand({
-      UserPoolId: this.cognitoUserPoolId,
-      Username: email,
-    });
-
     try {
+      this.log.log('Getting user');
+
+      const command = new AdminGetUserCommand({
+        UserPoolId: this.cognitoUserPoolId,
+        Username: email,
+      });
+
       const result = await this.client.send(command);
 
       return {

@@ -43,6 +43,7 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
   const result = await sql`SELECT 'HELLO WORLD' as message;`;
 
   try {
+    await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
     await sql`DROP TABLE IF EXISTS "user";`;
     await sql`DROP TABLE IF EXISTS project;`;
     await sql`DROP TABLE IF EXISTS customer;`;
@@ -54,7 +55,7 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
 
     await sql`
       CREATE TABLE customer (
-        id UUID PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name VARCHAR(50) NOT NULL UNIQUE,
         active BOOLEAN NOT NULL DEFAULT TRUE,
         details TEXT
@@ -65,7 +66,7 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
 
     await sql`
       CREATE TABLE project (
-        id UUID PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name VARCHAR(50) NOT NULL UNIQUE,
         active BOOLEAN NOT NULL DEFAULT TRUE,
         status project_status NOT NULL,

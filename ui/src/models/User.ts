@@ -1,8 +1,10 @@
 import type { Roles } from './Roles';
 
-export type User = {
+export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  roles: Roles[];
-};
+  userRoles: Roles[];
+  active: boolean;
+  project: { [key: string]: string | boolean } | null;
+}

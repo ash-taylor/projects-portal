@@ -1,5 +1,6 @@
 import { IsArray, IsBoolean, IsEnum, IsString } from 'class-validator';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn, Relation } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, Relation } from 'typeorm';
+import { Customer } from '../../customers/models/customer.entity';
 import { User } from '../../users/models/user.entity';
 
 export enum ProjectStatus {
@@ -31,6 +32,14 @@ export class Project {
   @IsArray()
   @Column({ type: 'text', nullable: true })
   details: string | null;
+
+  @ManyToOne(
+    () => Customer,
+    (customer) => customer.projects,
+    { onDelete: 'CASCADE' },
+  )
+  @JoinColumn({ name: 'customer_id' })
+  customer: Relation<Customer>;
 
   @OneToMany(
     () => User,

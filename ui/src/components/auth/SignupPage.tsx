@@ -13,12 +13,15 @@ import { AxiosError } from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
+import { useAuth } from '../../context/auth/authContext';
 import { FullPageCenteredBoxLayout } from '../../layouts/FullPageCentredBoxLayout';
+import type { User } from '../../models/User';
 import { RoutingButton } from '../../routing/RoutingButton';
 import { ErrorBox } from '../global/ErrorBox';
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
 
   const [error, setError] = useState<Error>();
   const [alertMessage, setAlertMessage] = useState<string>('');
@@ -42,16 +45,22 @@ const SignupPage = () => {
       // Basic validation
       if (!email || !password || !firstName || !lastName) throw new Error('Email and password are required');
 
-      const res = await apiClient.makeRequest('/auth/signup', {
-        method: 'post',
-        data: { firstName, lastName, password, email, admin },
-      });
+      const res = await apiClient.makeRequest(
+        '/auth/signup',
+        {
+          method: 'post',
+          data: { firstName, lastName, password, email, admin },
+        },
+        true,
+      );
 
       if (res.status === 201) setVerify(true);
     } catch (err) {
-      if (err instanceof AxiosError && (err.code === '409' || err.status === 409)) {
+      if (err instanceof AxiosError && err.status === 409 && err.response?.data.status === 'pending') {
         setAlertMessage('User already exists with verification pending, please enter confirmation code');
         setVerify(true);
+      } else if (err instanceof AxiosError && err.status === 409 && err.response?.data.status === 'conflict') {
+        setAlertMessage('User already exists, please log in');
       } else setError(err as Error);
     } finally {
       setLoading(false);
@@ -66,12 +75,18 @@ const SignupPage = () => {
       // Basic validation
       if (!email || !confirmationCode) throw new Error('Verification Code Required');
 
-      await apiClient.makeRequest('/auth/verify', {
-        method: 'post',
-        data: { email, confirmationCode },
-      });
+      const verifyResponse = await apiClient.makeRequest<User>(
+        '/auth/verify',
+        {
+          method: 'post',
+          data: { email, confirmationCode },
+        },
+        true,
+      );
 
-      navigate('/login');
+      updateUser(verifyResponse.data);
+
+      return navigate('/');
     } catch (err) {
       setError(err as Error);
     } finally {
