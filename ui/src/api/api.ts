@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import { AuthEvents, AuthSubject, type IAuthSubject } from '../components/auth/helpers/authEvents';
 import { type AppConfig, loadConfig } from '../config/config';
 
 class ApiClient {
@@ -10,7 +11,10 @@ class ApiClient {
   };
   private baseAxiosConfig: AxiosRequestConfig = {};
 
-  constructor(private readonly loadConfig: () => Promise<AppConfig>) {
+  constructor(
+    private readonly loadConfig: () => Promise<AppConfig>,
+    private authSubject: IAuthSubject,
+  ) {
     this.initialize();
 
     this.baseAxiosConfig = {
@@ -60,7 +64,8 @@ class ApiClient {
         withCredentials: true,
       });
     } catch (error) {
-      if (!axios.isAxiosError(error) || !error.response || error.response.status !== 201) throw error;
+      this.authSubject.notify(AuthEvents.AUTH_REFRESH_FAILED);
+      throw error;
     }
   }
 
@@ -69,4 +74,5 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(loadConfig);
+export const authSubject = new AuthSubject();
+export const apiClient = new ApiClient(loadConfig, authSubject);

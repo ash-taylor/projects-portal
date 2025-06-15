@@ -1,5 +1,6 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { apiClient } from '../../api';
+import { apiClient, authSubject } from '../../api';
+import { AuthEvents, type IAuthObserver } from '../../components/auth/helpers/authEvents';
 import type { MessageResponse } from '../../components/auth/models/MessageResponse';
 import type { User } from '../../models/User';
 
@@ -60,6 +61,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isLoggedIn = () => !loading && user !== undefined;
 
+  const updateUser = (user: User) => setUser(user);
+
+  useEffect(() => {
+    const observer: IAuthObserver = {
+      update(event: AuthEvents) {
+        if (event === AuthEvents.AUTH_REFRESH_FAILED) setUser(undefined);
+      },
+    };
+
+    authSubject.attach(observer);
+
+    return () => authSubject.detach(observer);
+  }, []);
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -76,8 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     fetchUser();
   }, [getUser]);
-
-  const updateUser = (user: User) => setUser(user);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isLoggedIn, loading, error, updateUser }}>

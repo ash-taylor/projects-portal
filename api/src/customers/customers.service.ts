@@ -114,24 +114,26 @@ export class CustomersService {
       name: customer.name,
       active: customer.active,
       details: customer.details,
-      projects: customer.projects.map((project) => {
-        return {
-          id: project.id,
-          name: project.name,
-          active: project.active,
-          status: project.status,
-          details: project.details,
-          users: project.users.map((user: User) => {
-            return {
-              firstName: user.first_name,
-              lastName: user.last_name,
-              email: user.email,
-              userRoles: user.user_roles,
-              active: user.active,
-            };
-          }),
-        };
-      }),
+      projects:
+        customer.projects?.map((project) => {
+          return {
+            id: project.id,
+            name: project.name,
+            active: project.active,
+            status: project.status,
+            details: project.details,
+            users:
+              project.users?.map((user: User) => {
+                return {
+                  firstName: user.first_name,
+                  lastName: user.last_name,
+                  email: user.email,
+                  userRoles: user.user_roles,
+                  active: user.active,
+                };
+              }) || [],
+          };
+        }) || [],
     };
   }
 }
