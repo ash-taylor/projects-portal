@@ -9,7 +9,6 @@ export function ApiExample() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // const data = await api.get<{ secret: string }>('/auth', true);
         const response = await apiClient.makeRequest<{ secret: string }>('/auth', { method: 'get' }, true);
         setMessage(response.data.secret);
       } catch (err) {

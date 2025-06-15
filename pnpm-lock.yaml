@@ -202,6 +202,9 @@ importers:
 
   ui:
     dependencies:
+      '@cloudscape-design/collection-hooks':
+        specifier: ^1.0.73
+        version: 1.0.73(react@19.1.0)
       '@cloudscape-design/components':
         specifier: ^3.0.979
         version: 3.0.979(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
