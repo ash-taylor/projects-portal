@@ -76,8 +76,8 @@ export class AuthController {
   @Delete('user')
   @Roles(Role.Admin) // Admin only
   @UseGuards(AuthGuard)
-  async deleteUser(@Query() dto: DeleteUserDto): Promise<UserResponseDto> {
-    return await this.authService.deleteUser(dto.email);
+  async deleteUser(@Query() dto: DeleteUserDto, @Req() req: Request): Promise<UserResponseDto> {
+    return await this.authService.deleteUser(dto.email, req);
   }
 
   // TEST ROUTE

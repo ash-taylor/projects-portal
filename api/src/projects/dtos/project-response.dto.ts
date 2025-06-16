@@ -21,7 +21,8 @@ export class ProjectResponseDto {
   details: string | null;
 
   @IsInstance(CustomerResponseDto)
-  customer!: Omit<CustomerResponseDto, 'projects'>;
+  @IsOptional()
+  customer?: Omit<CustomerResponseDto, 'projects'>;
 
   @IsArray()
   users!: Omit<UserResponseDto, 'project'>[];

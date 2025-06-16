@@ -13,6 +13,7 @@ import {
   GetTokensFromRefreshTokenCommand,
   RevokeTokenCommand,
   SignUpCommand,
+  UserNotFoundException,
   UserStatusType,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {
@@ -354,8 +355,13 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async deleteUser(email: string) {
+  async deleteUser(email: string, req: Request) {
     try {
+      const user = req.userId;
+
+      if (!user) throw new UnauthorizedException();
+      if (email === user.email) throw new BadRequestException('Cannot delete logged in user');
+
       this.log.log('Deleting user');
 
       await this.client.send(
@@ -368,6 +374,14 @@ export class AuthService implements OnModuleInit {
       return await this.usersService.deleteUser(email);
     } catch (error) {
       this.log.error(error);
+
+      if (error instanceof UserNotFoundException) {
+        // Edge case in which user does not exist in cognito but still resides in the DB
+        this.log.log('User does not exist in cognito, deleting user from DB');
+        return await this.usersService.deleteUser(email);
+      }
+
+      if (error instanceof BadRequestException) throw error;
 
       throw new InternalServerErrorException('Error whilst deleting user');
     }

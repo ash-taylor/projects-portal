@@ -13,3 +13,10 @@ export function getMatchesCountText(count: number | undefined) {
 
 export const buildAuthorizedOptions = <T extends { admin: boolean }>(options: T[], user: User | undefined): T[] =>
   options.filter((opt) => !opt.admin || (opt.admin && user?.userRoles.includes(Roles.ADMIN)));
+
+export const parseStatus = (status: string) =>
+  status
+    .split('_')
+    .map((word) => `${word[0].toUpperCase()}${word.slice(1)}`)
+    .toString()
+    .replace(',', ' ');

@@ -1,7 +1,8 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiClient, authSubject } from '../../api';
-import { AuthEvents, type IAuthObserver } from '../../components/auth/helpers/authEvents';
-import type { MessageResponse } from '../../components/auth/models/MessageResponse';
+import { AuthEvents } from '../../components/auth/events/AuthEvents';
+import type { IAuthObserver } from '../../components/auth/events/IAuthObserver';
+import type { MessageResponse } from '../../models/MessageResponse';
 import type { User } from '../../models/User';
 
 type AuthContextType = {
@@ -31,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async ({ email, password }: { email: string; password: string }) => {
     try {
-      const loginResponse = await apiClient.makeRequest<User>(
+      const loginResponse = await apiClient.makeRequest<User, { email: string; password: string }>(
         '/auth/signin',
         { method: 'post', data: { email, password } },
         true,

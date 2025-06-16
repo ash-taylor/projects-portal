@@ -2,7 +2,7 @@ import { IsBoolean, IsDefined, IsNotEmpty, IsOptional, IsString, MaxLength } fro
 
 export class CreateCustomerDto {
   @IsString()
-  @MaxLength(40)
+  @MaxLength(50)
   @IsNotEmpty()
   @IsDefined()
   name!: string;
@@ -13,6 +13,6 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(60)
   details?: string;
 }
