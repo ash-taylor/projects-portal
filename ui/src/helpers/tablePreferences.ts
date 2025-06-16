@@ -9,10 +9,10 @@ export const paginationLabels = {
 export const pageSizePreference = {
   title: 'Select page size',
   options: [
-    { value: 5, label: '5 alerts' },
-    { value: 10, label: '10 alerts' },
-    { value: 15, label: '15 alerts' },
-    { value: 20, label: '20 alerts' },
+    { value: 5, label: '5 items' },
+    { value: 10, label: '10 items' },
+    { value: 15, label: '15 items' },
+    { value: 20, label: '20 items' },
   ],
 };
 

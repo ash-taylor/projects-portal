@@ -1,5 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import { AuthEvents, AuthSubject, type IAuthSubject } from '../components/auth/helpers/authEvents';
+import { AuthEvents } from '../components/auth/events/AuthEvents';
+import { AuthSubject } from '../components/auth/events/AuthSubject';
+import type { IAuthSubject } from '../components/auth/events/IAuthSubject';
 import { type AppConfig, loadConfig } from '../config/config';
 
 class ApiClient {
@@ -30,11 +32,15 @@ class ApiClient {
     if (!this.apiUrl) throw new Error('Error getting apiUrl from config');
   }
 
-  async makeRequest<T>(url: string, options?: AxiosRequestConfig, withAuth = false): Promise<AxiosResponse<T>> {
+  async makeRequest<T, D = undefined>(
+    url: string,
+    options?: AxiosRequestConfig<D>,
+    withAuth = false,
+  ): Promise<AxiosResponse<T>> {
     if (!this.apiUrl) await this.initialize();
 
     try {
-      return await axios<T>({
+      return await axios<T, AxiosResponse<T>, D>({
         ...this.baseAxiosConfig,
         ...options,
         withCredentials: withAuth,
@@ -46,7 +52,7 @@ class ApiClient {
 
       await this.attemptTokenRefresh();
 
-      return await axios<T>({
+      return await axios<T, AxiosResponse<T>, D>({
         ...this.baseAxiosConfig,
         ...options,
         withCredentials: withAuth,

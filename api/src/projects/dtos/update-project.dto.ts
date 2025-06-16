@@ -3,7 +3,7 @@ import { ProjectStatus } from '../models/project.entity';
 
 export class UpdateProjectDto {
   @IsString()
-  @MaxLength(40)
+  @MaxLength(50)
   @IsOptional()
   name?: string;
 
@@ -17,6 +17,6 @@ export class UpdateProjectDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(60)
   details?: string;
 }

@@ -2,12 +2,14 @@ import { Button, Form, FormField, Header, Input, SpaceBetween, Textarea } from '
 import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
-import { useAuth } from '../../context/auth/authContext';
+import { useAuth } from '../../context/auth/AuthContext';
+import { buildError } from '../../helpers/buildError';
 import { Roles } from '../../models/Roles';
 import { RoutingButton } from '../../routing/RoutingButton';
 import { isUserAuthorized } from '../auth/helpers/helpers';
 import { ErrorBox } from '../global/ErrorBox';
-import type { ICustomerResponse } from './models/customer-response.interface';
+import type { ICreateCustomer } from './models/ICreateCustomer';
+import type { ICustomerResponse } from './models/ICustomerResponse';
 
 const AddCustomerPage = () => {
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ const AddCustomerPage = () => {
       if (!isUserAuthorized(user, [Roles.ADMIN])) throw new Error('You are not authorized to create a customer');
       if (!customerName) throw new Error('Customer name is required');
 
-      await apiClient.makeRequest<ICustomerResponse>(
+      await apiClient.makeRequest<ICustomerResponse, ICreateCustomer>(
         '/customers',
         {
           method: 'post',
@@ -41,7 +43,7 @@ const AddCustomerPage = () => {
 
       navigate('/customers');
     } catch (error) {
-      setError(error instanceof Error ? error : new Error('Unknown error'));
+      setError(buildError(error));
     } finally {
       setLoading(false);
     }

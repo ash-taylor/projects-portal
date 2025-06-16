@@ -1,9 +1,19 @@
-import { IsBoolean, IsDefined, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { ProjectStatus } from '../models/project.entity';
 
 export class CreateProjectDto {
   @IsString()
-  @MaxLength(40)
+  @MaxLength(50)
   @IsNotEmpty()
   @IsDefined()
   name!: string;
@@ -18,11 +28,14 @@ export class CreateProjectDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(60)
   details?: string;
 
   @IsUUID()
   @IsNotEmpty()
   @IsDefined()
   customerId!: string;
+
+  @IsArray()
+  userEmails: string[] = [];
 }

@@ -2,6 +2,7 @@ import { ConflictException, Injectable, InternalServerErrorException, Logger, No
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomersService } from '../customers/customers.service';
+import { UsersService } from '../users/users.service';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { ProjectResponseDto } from './dtos/project-response.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
@@ -14,6 +15,7 @@ export class ProjectsService {
   constructor(
     @InjectRepository(Project) private readonly projectsRepository: Repository<Project>,
     private readonly customersService: CustomersService,
+    private readonly usersService: UsersService,
   ) {
     this.log.log('Initializing Projects Service...');
   }
@@ -27,8 +29,13 @@ export class ProjectsService {
       if (await this.projectsRepository.exists({ where: { name } }))
         throw new ConflictException('Project already exists');
 
+      const userPromises = project.userEmails.map(
+        async (email) => await this.usersService.getUserDBEntityByEmail(email),
+      );
+      const users = await Promise.all(userPromises);
+
       const customer = await this.customersService.getCustomerById(customerId);
-      const newProject = this.projectsRepository.create({ name, active, status, details, customer });
+      const newProject = this.projectsRepository.create({ name, active, status, details, customer, users });
 
       const savedProject = await this.projectsRepository.save(newProject);
 
@@ -96,11 +103,16 @@ export class ProjectsService {
   async deleteProject(id: string) {
     try {
       this.log.log('Deleting project by id');
+      this.log.debug('ID:', id);
 
       const project = await this.projectsRepository.findOneBy({ id });
       if (!project) throw new NotFoundException('Project not found');
 
-      const deletedProject = await this.projectsRepository.remove(project);
+      this.log.debug('Proj TBD:', project);
+
+      const deletedProject = await this.projectsRepository.remove(project, {});
+
+      this.log.debug('Del proj:', deletedProject);
 
       return this._transformProjectToDto(deletedProject);
     } catch (error) {
@@ -118,21 +130,25 @@ export class ProjectsService {
       active: project.active,
       status: project.status,
       details: project.details,
-      customer: {
-        id: project.customer.id,
-        name: project.customer.name,
-        active: project.customer.active,
-        details: project.customer.details,
-      },
-      users: project.users.map((user) => {
-        return {
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email,
-          userRoles: user.user_roles,
-          active: user.active,
-        };
-      }),
+      customer: project.customer
+        ? {
+            id: project.customer.id,
+            name: project.customer.name,
+            active: project.customer.active,
+            details: project.customer.details,
+          }
+        : undefined,
+      users: project.users
+        ? project.users?.map((user) => {
+            return {
+              firstName: user.first_name,
+              lastName: user.last_name,
+              email: user.email,
+              userRoles: user.user_roles,
+              active: user.active,
+            };
+          })
+        : [],
     };
   }
 }

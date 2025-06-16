@@ -1,7 +1,8 @@
-import { IsDefined, IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsDefined, IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SignInDto {
   @IsEmail()
+  @MaxLength(30)
   @IsNotEmpty()
   @IsDefined()
   email!: string;

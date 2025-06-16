@@ -13,7 +13,8 @@ import { AxiosError } from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api';
-import { useAuth } from '../../context/auth/authContext';
+import { useAuth } from '../../context/auth/AuthContext';
+import { buildError } from '../../helpers/buildError';
 import { FullPageCenteredBoxLayout } from '../../layouts/FullPageCentredBoxLayout';
 import type { User } from '../../models/User';
 import { RoutingButton } from '../../routing/RoutingButton';
@@ -61,7 +62,9 @@ const SignupPage = () => {
         setVerify(true);
       } else if (err instanceof AxiosError && err.status === 409 && err.response?.data.status === 'conflict') {
         setAlertMessage('User already exists, please log in');
-      } else setError(err as Error);
+      } else {
+        setError(buildError(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +78,7 @@ const SignupPage = () => {
       // Basic validation
       if (!email || !confirmationCode) throw new Error('Verification Code Required');
 
-      const verifyResponse = await apiClient.makeRequest<User>(
+      const verifyResponse = await apiClient.makeRequest<User, { email: string; confirmationCode: string }>(
         '/auth/verify',
         {
           method: 'post',
@@ -88,7 +91,7 @@ const SignupPage = () => {
 
       return navigate('/');
     } catch (err) {
-      setError(err as Error);
+      setError(buildError(err));
     } finally {
       setLoading(false);
     }

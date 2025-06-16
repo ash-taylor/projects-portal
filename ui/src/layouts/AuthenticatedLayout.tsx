@@ -5,6 +5,7 @@ import {
   SideNavigation,
   type SideNavigationProps,
   SpaceBetween,
+  SplitPanel,
   TopNavigation,
 } from '@cloudscape-design/components';
 import I18nProvider from '@cloudscape-design/components/i18n';
@@ -14,7 +15,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { websiteBaseName } from '../api';
 import logo from '../assets/projects-portal.svg';
 import { ErrorBox } from '../components/global/ErrorBox';
-import { useAuth } from '../context/auth/authContext';
+import { useAuth } from '../context/auth/AuthContext';
+import { useSplitPanel } from '../context/split-panel/SplitPanelContext';
 import { buildAuthorizedOptions } from '../helpers/helpers';
 import { LoadingLayout } from './LoadingLayout';
 
@@ -37,6 +39,7 @@ export default function AuthenticatedLayout() {
   const [error, setError] = useState<Error>();
 
   const { user, logout } = useAuth();
+  const { header, content, open, openSplitPanel, closeSplitPanel } = useSplitPanel();
 
   const sideMenuOptions: SideNavigationProps.Item[] = [
     {
@@ -61,9 +64,43 @@ export default function AuthenticatedLayout() {
       ),
     },
     { type: 'divider' },
-    { type: 'section-group', title: 'Projects', items: [] },
+    {
+      type: 'section-group',
+      title: 'Projects',
+      items: buildAuthorizedOptions<SideNavigationPropsItem>(
+        [
+          {
+            text: 'Create Project',
+            type: 'link',
+            href: '/projects/create',
+            admin: true,
+          },
+          {
+            text: 'View Projects',
+            type: 'link',
+            href: '/projects',
+            admin: false,
+          },
+        ],
+        user,
+      ),
+    },
     { type: 'divider' },
-    { type: 'link-group', href: '#', text: 'Settings', items: [] },
+    {
+      type: 'section-group',
+      title: 'Team',
+      items: buildAuthorizedOptions<SideNavigationPropsItem>(
+        [
+          {
+            text: 'View Users',
+            type: 'link',
+            href: '/users',
+            admin: false,
+          },
+        ],
+        user,
+      ),
+    },
   ];
 
   const handleLogout = async (e: CustomEvent<ButtonDropdownProps.ItemClickDetails>) => {
@@ -132,6 +169,13 @@ export default function AuthenticatedLayout() {
           />
         }
         tools={<HelpPanel header={<h2>Overview</h2>}>Help content</HelpPanel>}
+        splitPanelOpen={open}
+        splitPanel={
+          <SplitPanel hidePreferencesButton={true} header={header} closeBehavior="hide">
+            {content}
+          </SplitPanel>
+        }
+        onSplitPanelToggle={() => (open ? closeSplitPanel() : openSplitPanel())}
         content={
           <SpaceBetween direction="vertical" size="l">
             {error && renderError()}

@@ -6,26 +6,32 @@ import {
   type CollectionPreferencesProps,
   Header,
   Pagination,
+  SpaceBetween,
   Table,
   TextFilter,
 } from '@cloudscape-design/components';
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../api';
-import { useAuth } from '../../context/auth/authContext';
+import { useAuth } from '../../context/auth/AuthContext';
+import { useSplitPanel } from '../../context/split-panel/SplitPanelContext';
+import { buildError } from '../../helpers/buildError';
+import { buildAuthorizedOptions, getMatchesCountText } from '../../helpers/helpers';
 import {
   getCollectionPreferencesProps,
   getContentDisplayPreferences,
   paginationLabels,
-} from '../../helpers/default-table-preferences';
-import { buildAuthorizedOptions, getMatchesCountText } from '../../helpers/helpers';
+} from '../../helpers/tablePreferences';
 import { Roles } from '../../models/Roles';
 import { isUserAuthorized } from '../auth/helpers/helpers';
 import EmptyState from '../global/EmptyState';
 import { ErrorBox } from '../global/ErrorBox';
-import type { ICustomerResponse } from './models/customer-response.interface';
+import type { IProjectResponse } from '../projects/models/IProjectResponse';
+import SplitPanelContent from '../split-panel/SplitPanelContent';
+import type { ICustomerResponse } from './models/ICustomerResponse';
 
 const ViewCustomersPage = () => {
   const { user } = useAuth();
+  const { updateHeader, updateContent, openSplitPanel, closeSplitPanel, open } = useSplitPanel();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -33,15 +39,19 @@ const ViewCustomersPage = () => {
   const [data, setData] = useState<ICustomerResponse[]>([]);
 
   const contentDisplay = [
-    { id: 'delete', visible: true, admin: true },
     { id: 'name', visible: true, admin: false },
     { id: 'details', visible: true, admin: false },
     { id: 'status', visible: true, admin: false },
+    { id: 'delete', visible: true, admin: true },
   ];
   const authorizedContentDisplay = buildAuthorizedOptions(contentDisplay, user);
   const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
     pageSize: 10,
     contentDisplay: authorizedContentDisplay,
+    wrapLines: false,
+    stripedRows: false,
+    contentDensity: 'comfortable',
+    stickyColumns: { first: 0, last: 1 },
   });
 
   useEffect(() => {
@@ -50,7 +60,7 @@ const ViewCustomersPage = () => {
         const response = await apiClient.makeRequest<ICustomerResponse[]>('/customers', { method: 'get' }, true);
         setData(response.data);
       } catch (error) {
-        setError(error instanceof Error ? error : new Error('Unknown error'));
+        setError(buildError(error));
       } finally {
         setLoading(false);
       }
@@ -61,8 +71,31 @@ const ViewCustomersPage = () => {
 
   const columnDefinitions = [
     {
+      id: 'name',
+      header: 'Name',
+      cell: (item: ICustomerResponse) => <h4>{item.name}</h4>,
+      sortingField: 'name',
+      admin: false,
+    },
+    {
+      id: 'details',
+      header: 'Details',
+      cell: (item: ICustomerResponse) => item.details,
+      sortingField: 'details',
+      admin: false,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (item: ICustomerResponse) => (
+        <Badge color={item.active ? 'green' : 'red'}>{item.active ? 'Active' : 'Inactive'}</Badge>
+      ),
+      sortingField: 'active',
+      admin: false,
+    },
+    {
       id: 'delete',
-      header: 'Delete Customer',
+      header: '',
       cell: (item: ICustomerResponse) => (
         <Button
           variant="inline-link"
@@ -72,29 +105,6 @@ const ViewCustomersPage = () => {
         />
       ),
       admin: true,
-    },
-    {
-      id: 'name',
-      header: 'Customer Name',
-      cell: (item: ICustomerResponse) => <h4>{item.name}</h4>,
-      sortingField: 'name',
-      admin: false,
-    },
-    {
-      id: 'details',
-      header: 'Customer Details',
-      cell: (item: ICustomerResponse) => item.details,
-      sortingField: 'details',
-      admin: false,
-    },
-    {
-      id: 'status',
-      header: 'Customer Status',
-      cell: (item: ICustomerResponse) => (
-        <Badge color={item.active ? 'green' : 'red'}>{item.active ? 'Active' : 'Inactive'}</Badge>
-      ),
-      sortingField: 'active',
-      admin: false,
     },
   ];
 
@@ -110,10 +120,57 @@ const ViewCustomersPage = () => {
     selection: { keepSelection: true, trackBy: 'id' },
     sorting: {
       defaultState: {
-        sortingColumn: columnDefinitions[1], // Default - Sort by customer name
+        sortingColumn: columnDefinitions[0], // Default - Sort by customer name
       },
     },
   });
+
+  const { selectedItems } = collectionProps;
+
+  const handleSelectionChange = (event: { detail: { selectedItems: ICustomerResponse[] } }) => {
+    const { selectedItems } = event.detail;
+
+    if (selectedItems.length === 1) {
+      const selectedCustomer = selectedItems[0];
+      updateHeader(selectedCustomer.name);
+      updateContent(
+        <SpaceBetween size="s">
+          <SplitPanelContent<IProjectResponse>
+            contentType="projects"
+            keyValueItems={[
+              {
+                label: 'Name',
+                value: selectedCustomer.name,
+                info: (
+                  <Badge color={selectedCustomer.active ? 'green' : 'red'}>
+                    {selectedCustomer.active ? 'Active' : 'Inactive'}
+                  </Badge>
+                ),
+              },
+              {
+                label: 'Details',
+                value: selectedCustomer.details || 'No details available',
+              },
+            ]}
+            tableItems={selectedCustomer.projects}
+          />
+        </SpaceBetween>,
+      );
+      openSplitPanel();
+    } else {
+      closeSplitPanel();
+    }
+
+    if (collectionProps.onSelectionChange) {
+      collectionProps.onSelectionChange(event);
+    }
+  };
+
+  useEffect(() => {
+    if (!open && selectedItems?.length && collectionProps.onSelectionChange) {
+      collectionProps.onSelectionChange({ detail: { selectedItems: [] } });
+    }
+  }, [collectionProps, open, selectedItems?.length]);
 
   const handleDeleteCustomer = async (customerId: string) => {
     try {
@@ -133,15 +190,19 @@ const ViewCustomersPage = () => {
   const renderCustomersTable = () => (
     <Table
       {...collectionProps}
+      onSelectionChange={handleSelectionChange}
+      enableKeyboardNavigation={true}
+      items={items}
+      columnDefinitions={authorizedColumnDefinitions}
+      columnDisplay={preferences.contentDisplay}
+      stickyHeader={true}
+      resizableColumns={true}
       selectionType="single"
       header={
         <Header variant="h1" counter={`(${data.length})`}>
           Customers
         </Header>
       }
-      columnDefinitions={authorizedColumnDefinitions}
-      columnDisplay={preferences.contentDisplay}
-      items={items}
       pagination={<Pagination {...paginationProps} ariaLabels={paginationLabels} />}
       filter={
         <TextFilter
@@ -159,8 +220,12 @@ const ViewCustomersPage = () => {
         />
       }
       variant="embedded"
-      wrapLines
+      wrapLines={preferences.wrapLines}
+      stripedRows={preferences.stripedRows}
+      contentDensity={preferences.contentDensity}
+      stickyColumns={preferences.stickyColumns}
       loading={loading}
+      loadingText="Loading customers..."
     />
   );
 

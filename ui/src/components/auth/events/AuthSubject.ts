@@ -1,16 +1,6 @@
-export enum AuthEvents {
-  AUTH_REFRESH_FAILED = 'AUTH_REFRESH_FAILED',
-}
-
-export interface IAuthSubject {
-  attach(observer: IAuthObserver): void;
-  detach(observer: IAuthObserver): void;
-  notify(event: AuthEvents): void;
-}
-
-export interface IAuthObserver {
-  update(event: AuthEvents): void;
-}
+import type { AuthEvents } from './AuthEvents';
+import type { IAuthObserver } from './IAuthObserver';
+import type { IAuthSubject } from './IAuthSubject';
 
 export class AuthSubject implements IAuthSubject {
   private observers: IAuthObserver[] = [];

@@ -1,7 +1,8 @@
 import { Button, Container, Form, FormField, Header, Input, SpaceBetween } from '@cloudscape-design/components';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/auth/authContext';
+import { useAuth } from '../../context/auth/AuthContext';
+import { buildError } from '../../helpers/buildError';
 import { FullPageCenteredBoxLayout } from '../../layouts/FullPageCentredBoxLayout';
 import { LoadingLayout } from '../../layouts/LoadingLayout';
 import { RoutingButton } from '../../routing/RoutingButton';
@@ -33,7 +34,7 @@ const LoginPage = () => {
 
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err as Error);
+      setError(buildError(err));
     } finally {
       setLoading(false);
     }

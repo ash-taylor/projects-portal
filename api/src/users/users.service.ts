@@ -79,6 +79,21 @@ export class UsersService {
     }
   }
 
+  async getUserDBEntityByEmail(email: string): Promise<User> {
+    try {
+      this.log.log('Getting user DB entity by email');
+
+      const user = await this.usersRepository.findOne({ where: { email } });
+      if (!user) throw new NotFoundException();
+
+      return user;
+    } catch (error) {
+      this.log.error(error);
+      if (error instanceof NotFoundException) throw new NotFoundException();
+      throw new InternalServerErrorException();
+    }
+  }
+
   async getAllUsers(): Promise<UserResponseDto[]> {
     try {
       this.log.log('Getting all users');
@@ -105,12 +120,11 @@ export class UsersService {
 
     return this._transformUserToDto(await this.usersRepository.save(user));
   }
-  async deleteUser(email: string): Promise<UserResponseDto>;
-  async deleteUser(sub: string): Promise<UserResponseDto>;
-  async deleteUser(sub?: string, email?: string) {
+
+  async deleteUser(identifier: string): Promise<UserResponseDto> {
     this.log.log('Deleting user from database');
 
-    const user = await this.usersRepository.findOneBy([{ sub }, { email }]);
+    const user = await this.usersRepository.findOneBy([{ sub: identifier }, { email: identifier }]);
     if (!user) throw new NotFoundException();
 
     return this._transformUserToDto(await this.usersRepository.remove(user));
@@ -129,15 +143,17 @@ export class UsersService {
         active: user.project.active,
         status: user.project.status,
         details: user.project.details,
-        users: user.project.users.map((user: User) => {
-          return {
-            firstName: user.first_name,
-            lastName: user.last_name,
-            email: user.email,
-            userRoles: user.user_roles,
-            active: user.active,
-          };
-        }),
+        users:
+          user.project.users &&
+          user.project.users.map((user: User) => {
+            return {
+              firstName: user.first_name,
+              lastName: user.last_name,
+              email: user.email,
+              userRoles: user.user_roles,
+              active: user.active,
+            };
+          }),
         customer: {
           id: user.project.customer.id,
           name: user.project.customer.name,
