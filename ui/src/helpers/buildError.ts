@@ -7,8 +7,7 @@
  */
 export const buildError = (error: unknown) =>
   new Error(
-    (error as { response: { data: { message: string } } }).response?.data.message[0][0].toUpperCase() +
-      (error as { response: { data: { message: string } } }).response?.data.message[0].slice(1) ||
-      (error as Error).message[0].toUpperCase() + (error as Error).message.slice(1) ||
+    (error as { response: { data: { message: string } } }).response?.data.message ||
+      (error as Error).message ||
       'Something went wrong...',
   );
