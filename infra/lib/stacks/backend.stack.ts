@@ -134,6 +134,7 @@ export class BackendStack extends Stack {
           'cognito-idp:AdminGetUser',
           'cognito-idp:AdminAddUserToGroup',
           'cognito-idp:AdminDeleteUser',
+          'cognito-idp:AdminUpdateUserAttributes',
           'cognito-idp:ConfirmSignUp',
           'cognito-idp:SignUp',
           'cognito-idp:RevokeToken',

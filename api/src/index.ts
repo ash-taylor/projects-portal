@@ -30,7 +30,7 @@ async function bootstrapServer(): Promise<Handler> {
     .use(cookieParser())
     .enableCors({
       origin: [config.uiDomain],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
     });

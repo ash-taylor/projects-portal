@@ -35,5 +35,5 @@ export class User {
     { onDelete: 'SET NULL' },
   )
   @JoinColumn({ name: 'project_id' })
-  project: Relation<Project>;
+  project: Relation<Project> | null;
 }

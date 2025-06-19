@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { isUserAuthorized } from '../components/auth/helpers/helpers';
-import { useAuth } from '../context/auth/AuthContext';
+import { useAuth } from '../context/auth/authContext';
 import { Roles } from '../models/Roles';
 
 export default function PrivateAdminRoutes() {

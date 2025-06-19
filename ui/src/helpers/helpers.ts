@@ -1,3 +1,4 @@
+import { isUserAuthorized } from '../components/auth/helpers/helpers';
 import { Roles } from '../models/Roles';
 import type { User } from '../models/User';
 
@@ -6,14 +7,34 @@ import type { User } from '../models/User';
  * in a table filter
  *
  * @param count Number of matches
+ * @returns String with the correct pluralization
  */
 export function getMatchesCountText(count: number | undefined) {
   return count === 1 ? '1 match' : `${count} matches`;
 }
 
-export const buildAuthorizedOptions = <T extends { admin: boolean }>(options: T[], user: User | undefined): T[] =>
-  options.filter((opt) => !opt.admin || (opt.admin && user?.userRoles.includes(Roles.ADMIN)));
+/**
+ *
+ * @param options An array of options to filter, with an admin flag
+ * @param user The logged in user object
+ * @returns An array of options that are authorized for the user
+ */
+export const buildAuthorizedOptions = <T extends { admin: boolean; editConfig?: object | undefined }>(
+  options: T[],
+  user: User | undefined,
+): T[] =>
+  options
+    .filter((opt) => !opt.admin || (opt.admin && user?.userRoles.includes(Roles.ADMIN)))
+    .map((opt) => {
+      if (!isUserAuthorized(user, [Roles.ADMIN]) && opt.editConfig) delete opt.editConfig;
+      return opt;
+    });
 
+/**
+ *
+ * @param status A Status enum e.g. in_planning
+ * @returns A parsed, readable version e.g. In planning
+ */
 export const parseStatus = (status: string) =>
   status
     .split('_')

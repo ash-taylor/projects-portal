@@ -39,7 +39,7 @@ export class CustomersService {
     try {
       this.log.log('Getting all customers');
 
-      const customers = await this.customersRepository.find({ relations: ['projects', 'projects.users'] });
+      const customers = await this.customersRepository.find({ relations: ['projects'] });
 
       return customers.map((customer) => this._transformCustomerToDto(customer));
     } catch (error) {
@@ -66,20 +66,33 @@ export class CustomersService {
     }
   }
 
+  async getCustomerEntityById(id: string): Promise<Customer> {
+    try {
+      this.log.log('Getting customer by id');
+
+      const customer = await this.customersRepository.findOneBy({ id });
+      if (!customer) throw new NotFoundException('Customer not found');
+
+      return customer;
+    } catch (error) {
+      this.log.error(error);
+
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException();
+    }
+  }
+
   async updateCustomer(id: string, customer: UpdateCustomerDto) {
     try {
       this.log.log('Updating customer by id');
 
-      const customerToUpdate = await this.customersRepository.findOneBy({ id });
+      const customerToUpdate = await this.customersRepository.findOne({ where: { id }, relations: ['projects'] });
       if (!customerToUpdate) throw new NotFoundException('Customer not found');
 
-      const { name, active, details } = customer;
-
-      customerToUpdate.name = name || customerToUpdate.name;
-      customerToUpdate.active = active === undefined ? customerToUpdate.active : active;
-      customerToUpdate.details = details || customerToUpdate.details;
-
-      const updatedCustomer = await this.customersRepository.save(customerToUpdate);
+      const updatedCustomer = await this.customersRepository.save({
+        ...customerToUpdate,
+        ...customer,
+      });
 
       return this._transformCustomerToDto(updatedCustomer);
     } catch (error) {

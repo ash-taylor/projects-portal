@@ -10,7 +10,6 @@ export async function handler(event: CloudFormationCustomResourceEvent) {
 
   switch (event.RequestType) {
     case 'Create':
-    case 'Update':
       await initRdsInstance(props);
       break;
     default:

@@ -2,6 +2,7 @@ import { type ReactNode, createContext, useCallback, useContext, useEffect, useS
 import { apiClient, authSubject } from '../../api';
 import { AuthEvents } from '../../components/auth/events/AuthEvents';
 import type { IAuthObserver } from '../../components/auth/events/IAuthObserver';
+import { buildError } from '../../helpers/buildError';
 import type { MessageResponse } from '../../models/MessageResponse';
 import type { User } from '../../models/User';
 
@@ -43,7 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       return loginResponse.data;
     } catch (error) {
-      setError(error as Error);
+      setError(buildError(error));
+      throw error;
     }
   };
 
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await apiClient.makeRequest<MessageResponse>('/auth/logout', { method: 'post' }, true);
       return response.data;
     } catch (error) {
-      setError(error as Error);
+      setError(buildError(error));
     } finally {
       setUser(undefined);
     }
@@ -83,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const user = await getUser();
         setUser(user.data);
       } catch (error) {
-        setError(error as Error);
+        setError(buildError(error));
         setUser(undefined);
       } finally {
         setLoading(false);

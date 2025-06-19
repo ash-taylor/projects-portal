@@ -1,33 +1,60 @@
-import { Button, Form, FormField, Header, Input, SpaceBetween, Textarea } from '@cloudscape-design/components';
-import { type FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Alert, Button, Form, FormField, Header, Input, SpaceBetween } from '@cloudscape-design/components';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { apiClient } from '../../api';
-import { useAuth } from '../../context/auth/AuthContext';
+import { useAuth } from '../../context/auth/authContext';
 import { buildError } from '../../helpers/buildError';
 import { Roles } from '../../models/Roles';
 import { RoutingButton } from '../../routing/RoutingButton';
+import { isValidDetails, isValidEntity } from '../../validation/validators';
 import { isUserAuthorized } from '../auth/helpers/helpers';
 import { ErrorBox } from '../global/ErrorBox';
 import type { ICreateCustomer } from './models/ICreateCustomer';
 import type { ICustomerResponse } from './models/ICustomerResponse';
 
 const AddCustomerPage = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [error, setError] = useState<Error>();
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<ReactNode>(null);
 
   const [customerName, setCustomerName] = useState<string>('');
+  const [customerNameError, setCustomerNameError] = useState<string>('');
   const [customerDetails, setCustomerDetails] = useState<string>('');
+  const [customerDetailsError, setCustomerDetailsError] = useState<string>('');
+
+  const resetForm = () => {
+    setCustomerName('');
+    setCustomerDetails('');
+    resetValidation();
+  };
+
+  const resetValidation = () => {
+    setCustomerNameError('');
+    setCustomerDetailsError('');
+  };
+
+  const validateInput = () => {
+    let valid = true;
+    if (!isValidEntity(customerName)) {
+      setCustomerNameError('Must be a valid customer name');
+      valid = false;
+    }
+    if (!isValidDetails(customerDetails)) {
+      setCustomerDetailsError('Customer details must not exceed 60 characters');
+      valid = false;
+    }
+    if (!valid) throw new Error('Invalid input, please check input values');
+    return valid;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     try {
-      e.preventDefault();
-      setLoading(true);
-
       if (!isUserAuthorized(user, [Roles.ADMIN])) throw new Error('You are not authorized to create a customer');
-      if (!customerName) throw new Error('Customer name is required');
+
+      e.preventDefault();
+      validateInput();
+      setLoading(true);
 
       await apiClient.makeRequest<ICustomerResponse, ICreateCustomer>(
         '/customers',
@@ -41,13 +68,26 @@ const AddCustomerPage = () => {
         true,
       );
 
-      navigate('/customers');
+      setAlert(
+        <Alert
+          type="success"
+          dismissible
+          onDismiss={() => setAlert(null)}
+          action={<RoutingButton href="/customers">View Customers</RoutingButton>}
+        >
+          {customerName} added successfully
+        </Alert>,
+      );
+
+      resetForm();
     } catch (error) {
       setError(buildError(error));
     } finally {
       setLoading(false);
     }
   };
+
+  const renderAlert = () => alert;
 
   const renderError = () => error && <ErrorBox error={error} onDismiss={() => setError(undefined)} />;
 
@@ -56,15 +96,15 @@ const AddCustomerPage = () => {
       <Form
         actions={
           <SpaceBetween direction="horizontal" size="xs">
-            <RoutingButton href="/" formAction="none" variant="link" disabled={loading}>
+            <Button formAction="none" variant="link" disabled={loading || !customerName} onClick={resetForm}>
               Cancel
-            </RoutingButton>
+            </Button>
             <Button
               variant="primary"
               loading={loading}
               formAction="submit"
               loadingText="Creating Customer"
-              disabled={!customerName}
+              disabled={loading || !customerName}
             >
               Create Customer
             </Button>
@@ -74,9 +114,16 @@ const AddCustomerPage = () => {
       >
         <SpaceBetween direction="vertical" size="s">
           {error && renderError()}
-          {/* <Container> */}
+          {alert && renderAlert()}
           <SpaceBetween direction="vertical" size="l">
-            <FormField label="Customer Name" description="Enter the name of the customer">
+            <FormField
+              label="Customer Name"
+              description="Enter the name of the customer"
+              constraintText={<>Name must be 1 to 50 characters. Character count: {customerName.length}/50</>}
+              errorText={
+                customerNameError || customerName.length > 50 ? 'Name must be 50 characters or less' : undefined
+              }
+            >
               <Input
                 name="customerName"
                 value={customerName}
@@ -88,9 +135,24 @@ const AddCustomerPage = () => {
               />
             </FormField>
 
-            <FormField label="Customer Details" description="Enter customer details">
-              <Textarea
+            <FormField
+              label={
+                <span>
+                  Customer Details <i>- optional</i>{' '}
+                </span>
+              }
+              description="Enter customer details"
+              constraintText={<>Max 60 characters. Character count: {customerDetails.length}/60</>}
+              errorText={
+                customerDetailsError || customerDetails.length > 60
+                  ? 'Details must be 60 characters or less'
+                  : undefined
+              }
+            >
+              <Input
                 name="customerDetails"
+                type="text"
+                inputMode="text"
                 value={customerDetails}
                 placeholder="Customer details (optional)"
                 onChange={({ detail }) => setCustomerDetails(detail.value)}
@@ -98,13 +160,12 @@ const AddCustomerPage = () => {
               />
             </FormField>
           </SpaceBetween>
-          {/* </Container> */}
         </SpaceBetween>
       </Form>
     </form>
   );
 
-  return <>{error ? renderError() : renderAddCustomerForm()}</>;
+  return renderAddCustomerForm();
 };
 
 export default AddCustomerPage;

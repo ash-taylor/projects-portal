@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { apiClient } from './api/ApiClient.ts';
 import { websiteBaseName } from './config/config.ts';
-import { AuthProvider } from './context/auth/AuthContext.tsx';
+import { AuthProvider } from './context/auth/authContext.tsx';
 
 import '@cloudscape-design/global-styles/index.css';
 import './index.css';

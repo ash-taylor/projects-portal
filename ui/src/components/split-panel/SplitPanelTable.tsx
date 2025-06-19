@@ -32,11 +32,13 @@ function SplitPanelTable<T extends { [key: string]: string | number | boolean | 
 }: SplitPanelTableProps<T>) {
   const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
     pageSize: 10,
-    contentDisplay: Object.keys(data[0]).map((key) => ({
-      id: key.toLowerCase(),
-      visible: true,
-      admin: false,
-    })),
+    contentDisplay: data.length
+      ? Object.keys(data[0]).map((key) => ({
+          id: key.toLowerCase(),
+          visible: true,
+          admin: false,
+        }))
+      : [],
     wrapLines: false,
     stripedRows: false,
     contentDensity: 'comfortable',
@@ -79,9 +81,11 @@ function SplitPanelTable<T extends { [key: string]: string | number | boolean | 
     },
     pagination: { pageSize: preferences.pageSize },
     sorting: {
-      defaultState: {
-        sortingColumn: columnDefinitions[0], // Default - Sort by first column
-      },
+      defaultState: data.length
+        ? {
+            sortingColumn: columnDefinitions[0], // Default - Sort by first column
+          }
+        : undefined,
     },
   });
 
@@ -102,7 +106,7 @@ function SplitPanelTable<T extends { [key: string]: string | number | boolean | 
           {...filterProps}
           filteringPlaceholder={`Filter ${contentType}`}
           countText={getMatchesCountText(filteredItemsCount)}
-          filteringAriaLabel={'Filter customers'}
+          filteringAriaLabel={`Filter ${contentType}`}
         />
       }
       preferences={
