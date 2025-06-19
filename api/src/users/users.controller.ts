@@ -18,7 +18,7 @@ export class UsersController {
   @Roles(Role.Admin, Role.User)
   @UseGuards(AuthGuard)
   async getUsers(@Query() queryParams?: UserEmailDto): Promise<UserResponseDto | UserResponseDto[]> {
-    if (queryParams && queryParams.email) return await this.usersService.getUserByEmail(queryParams.email);
+    if (queryParams && queryParams.email) return await this.usersService.getUser(queryParams.email);
     return await this.usersService.getAllUsers();
   }
 }
