@@ -386,6 +386,9 @@ export class AuthService implements OnModuleInit {
     } catch (error) {
       this.log.error(error);
 
+      if (error instanceof UserNotFoundException) throw new UnauthorizedException();
+      if (error instanceof UnauthorizedException) throw error;
+
       throw new InternalServerErrorException('Error whilst updating user');
     }
   }
