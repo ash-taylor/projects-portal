@@ -175,9 +175,12 @@ describe('AuthService', () => {
     mockCognitoClient = {
       send: jest.fn(),
     };
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (service as any).client = mockCognitoClient;
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (service as any).cognitoAppClientSecret = 'mock-client-secret';
 
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (service as any).getUser = jest.fn().mockResolvedValue({
       username: 'test@example.com',
       userStatus: 'CONFIRMED',

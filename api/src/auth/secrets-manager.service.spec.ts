@@ -21,6 +21,7 @@ describe('SecretsManagerService', () => {
     }).compile();
 
     service = module.get<SecretsManagerService>(SecretsManagerService);
+    // biome-ignore lint/suspicious/noExplicitAny:
     mockClient = (service as any).client;
   });
 

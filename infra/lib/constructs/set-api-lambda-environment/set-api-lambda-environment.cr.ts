@@ -5,8 +5,8 @@ import { Function as LambdaFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
-import { SetApiLambdaEnvironmentHandlerProps } from './set-api-lambda-environment-handler.props';
 import { ApiHandlerEnv } from '../../stacks/deployment.stack';
+import { SetApiLambdaEnvironmentHandlerProps } from './set-api-lambda-environment-handler.props';
 
 const solutionRootDir = `${__dirname}/../../../../`;
 

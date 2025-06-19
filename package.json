@@ -14,7 +14,11 @@
     "start:api": "cd api && pnpm start:dev",
     "start:ui": "cd ui && pnpm dev",
     "start:local-db": "cd local-db && docker compose up -d",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "lint": "biome lint --write",
+    "format": "biome format --write",
+    "check": "biome check --write",
+    "prepare": "husky"
   },
   "pnpm": {
     "overrides": {
@@ -24,6 +28,8 @@
   "packageManager": "pnpm@10.10.0",
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "git-format-staged": "^3.1.1",
+    "husky": "^9.1.7",
     "typescript": "~5.8.3"
   }
 }
