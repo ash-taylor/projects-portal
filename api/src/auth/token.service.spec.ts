@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TokenService } from './token.service';
 import * as awsJwtVerify from 'aws-jwt-verify';
+import { TokenService } from './token.service';
 
 jest.mock('aws-jwt-verify', () => ({
   CognitoJwtVerifier: {
@@ -115,10 +115,11 @@ describe('TokenService', () => {
   describe('decodeJwt', () => {
     it('should decode a valid JWT token', () => {
       // This is a sample JWT with payload { "sub": "test-user", "name": "Test User" }
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJuYW1lIjoiVGVzdCBVc2VyIn0.KxByF3yAqJPE6GbHeDGXbUjCFBJ-vxYl-PVG5qBKwmg';
-      
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJuYW1lIjoiVGVzdCBVc2VyIn0.KxByF3yAqJPE6GbHeDGXbUjCFBJ-vxYl-PVG5qBKwmg';
+
       const result = service.decodeJwt(token);
-      
+
       expect(result).toEqual({
         sub: 'test-user',
         name: 'Test User',
@@ -139,6 +140,7 @@ describe('TokenService', () => {
         cookies: {},
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny:
       const result = service.extractTokenFromHeader(request as any);
 
       expect(result).toBe('test-token');
@@ -150,6 +152,7 @@ describe('TokenService', () => {
         cookies: {},
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny:
       const result = service.extractTokenFromHeader(request as any);
 
       expect(result).toBeUndefined();
@@ -165,6 +168,7 @@ describe('TokenService', () => {
         },
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny:
       const result = service.extractToken(request as any, 'access_token');
 
       expect(result).toBe('cookie-token');
@@ -178,6 +182,7 @@ describe('TokenService', () => {
         cookies: {},
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny:
       const result = service.extractToken(request as any, 'access_token');
 
       expect(result).toBe('header-token');
@@ -191,6 +196,7 @@ describe('TokenService', () => {
         cookies: {},
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny:
       const result = service.extractToken(request as any, 'access_token', false);
 
       expect(result).toBeUndefined();

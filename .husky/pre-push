@@ -1,0 +1,3 @@
+git-format-staged --formatter 'biome check --files-ignore-unknown=true --no-errors-on-unmatched \"{}\"' .
+pnpm initial-setup
+pnpm test

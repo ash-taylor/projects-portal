@@ -1,4 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/models/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuthCookieService } from './auth-cookie.service';
 import { AuthController } from './auth.controller';
@@ -6,8 +8,6 @@ import { AuthService } from './auth.service';
 import { IdTokenMiddleware } from './middlewares/id-token.middleware';
 import { SecretsManagerService } from './secrets-manager.service';
 import { TokenService } from './token.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../users/models/user.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],

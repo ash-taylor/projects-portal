@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProjectsController } from './projects.controller';
-import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { ProjectIDDto } from './dtos/project-id.dto';
 import { ProjectResponseDto } from './dtos/project-response.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 import { ProjectStatus } from './models/project.entity';
+import { ProjectsController } from './projects.controller';
+import { ProjectsService } from './projects.service';
 
 // Mock the AuthGuard
 jest.mock('../auth/auth.guard', () => ({

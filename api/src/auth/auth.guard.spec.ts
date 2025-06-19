@@ -2,8 +2,8 @@ import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthGuard } from './auth.guard';
-import { TokenService } from './token.service';
 import { Role } from './models/role.enum';
+import { TokenService } from './token.service';
 
 describe('AuthGuard', () => {
   let guard: AuthGuard;

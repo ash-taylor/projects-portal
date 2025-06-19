@@ -13,9 +13,13 @@
       "cdk-out.json",
       "cdk.context.json",
       "build",
-      "coverage",
       ".build",
-      "dist"
+      "dist",
+      ".vite",
+      ".test",
+      ".env",
+      "coverage",
+      "tsconfig.*.json"
     ]
   },
   "formatter": {
