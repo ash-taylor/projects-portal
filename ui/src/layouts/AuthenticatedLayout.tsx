@@ -15,8 +15,9 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { websiteBaseName } from '../api';
 import logo from '../assets/projects-portal.svg';
 import { ErrorBox } from '../components/global/ErrorBox';
-import { useAuth } from '../context/auth/AuthContext';
+import { useAuth } from '../context/auth/authContext';
 import { useSplitPanel } from '../context/split-panel/SplitPanelContext';
+import { buildError } from '../helpers/buildError';
 import { buildAuthorizedOptions } from '../helpers/helpers';
 import { LoadingLayout } from './LoadingLayout';
 
@@ -92,10 +93,10 @@ export default function AuthenticatedLayout() {
       items: buildAuthorizedOptions<SideNavigationPropsItem>(
         [
           {
-            text: 'View Users',
+            text: 'Manage Team',
             type: 'link',
             href: '/users',
-            admin: false,
+            admin: true,
           },
         ],
         user,
@@ -110,7 +111,7 @@ export default function AuthenticatedLayout() {
 
       await logout();
     } catch (error) {
-      setError(error as Error);
+      setError(buildError(error));
     } finally {
       setLoading(false);
     }
@@ -142,7 +143,6 @@ export default function AuthenticatedLayout() {
               iconName: 'user-profile',
               items: [
                 { id: 'profile', text: 'Profile' },
-                { id: 'preferences', text: 'Preferences' },
                 { id: 'signout', text: 'Sign out' },
               ],
               onItemClick: (e) => {

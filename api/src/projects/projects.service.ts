@@ -29,9 +29,7 @@ export class ProjectsService {
       if (await this.projectsRepository.exists({ where: { name } }))
         throw new ConflictException('Project already exists');
 
-      const userPromises = project.userEmails.map(
-        async (email) => await this.usersService.getUserDBEntityByEmail(email),
-      );
+      const userPromises = project.userEmails.map(async (email) => await this.usersService.getUserDBEntity(email));
       const users = await Promise.all(userPromises);
 
       const customer = await this.customersService.getCustomerById(customerId);
@@ -43,6 +41,21 @@ export class ProjectsService {
     } catch (error) {
       this.log.error(error);
       if (error instanceof ConflictException) throw error;
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getProjectDBEntity(id: string): Promise<Project> {
+    try {
+      this.log.log('Getting project by id');
+
+      const project = await this.projectsRepository.findOneBy({ id });
+      if (!project) throw new NotFoundException('Project not found');
+
+      return project;
+    } catch (error) {
+      this.log.error(error);
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException();
     }
   }
@@ -75,21 +88,20 @@ export class ProjectsService {
     }
   }
 
-  async updateProject(id: string, project: UpdateProjectDto) {
+  async updateProject(id: string, project: UpdateProjectDto): Promise<ProjectResponseDto> {
     try {
       this.log.log('Updating project by id');
 
-      const projectToUpdate = await this.projectsRepository.findOneBy({ id });
+      const projectToUpdate = await this.projectsRepository.findOne({
+        where: { id },
+        relations: ['customer', 'users'],
+      });
       if (!projectToUpdate) throw new NotFoundException('Project not found');
 
-      const { name, active, status, details } = project;
-
-      projectToUpdate.name = name || projectToUpdate.name;
-      projectToUpdate.active = active === undefined ? projectToUpdate.active : active;
-      projectToUpdate.status = status || projectToUpdate.status;
-      projectToUpdate.details = details || projectToUpdate.details;
-
-      const updatedProject = await this.projectsRepository.save(projectToUpdate);
+      const updatedProject = await this.projectsRepository.save({
+        ...projectToUpdate,
+        ...project,
+      });
 
       return this._transformProjectToDto(updatedProject);
     } catch (error) {

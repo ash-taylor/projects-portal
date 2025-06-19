@@ -199,7 +199,7 @@ export class AuthService implements OnModuleInit {
         path: 'auth',
       }); // 1 Day
 
-      return await this.usersService.getUserByEmail(email);
+      return await this.usersService.getUser(email);
     } catch (error: unknown) {
       if ((error as Error)?.name === 'UserNotFoundException') throw new UnauthorizedException();
 
@@ -271,7 +271,7 @@ export class AuthService implements OnModuleInit {
 
       if (!session) {
         await this.usersService.verifyUser(email);
-        return await this.usersService.getUserByEmail(email);
+        return await this.usersService.getUser(email);
       }
 
       const command = new AdminInitiateAuthCommand({
@@ -307,7 +307,7 @@ export class AuthService implements OnModuleInit {
 
       await this.usersService.verifyUser(email);
 
-      return await this.usersService.getUserByEmail(email);
+      return await this.usersService.getUser(email);
     } catch (error: unknown) {
       this.log.error(error);
 
@@ -319,12 +319,46 @@ export class AuthService implements OnModuleInit {
     }
   }
 
+  async updateUser(email: string, dto: UpdateUserDto): Promise<UserResponseDto> {
+    try {
+      this.log.log('Updating user');
+
+      const UserAttributes: AttributeType[] = [];
+      if (dto.firstName) UserAttributes.push({ Name: 'given_name', Value: dto.firstName });
+      if (dto.lastName) UserAttributes.push({ Name: 'family_name', Value: dto.lastName });
+      if (dto.email)
+        UserAttributes.push(
+          ...[
+            { Name: 'email', Value: dto.email },
+            { Name: 'email_verified', Value: 'true' },
+          ],
+        );
+
+      if (UserAttributes.length) {
+        const command = new AdminUpdateUserAttributesCommand({
+          UserPoolId: this.cognitoUserPoolId,
+          Username: email,
+          UserAttributes,
+        });
+
+        this.log.log('Updating cognito user');
+        await this.client.send(command);
+      }
+
+      this.log.log('Updating user in database');
+      return await this.usersService.updateUser(dto, email);
+    } catch (error) {
+      this.log.error(error);
+
+      throw new InternalServerErrorException('Error whilst updating user');
+    }
+  }
+
   async updateLoggedInUserInfo(dto: UpdateUserDto, req: Request) {
     try {
       this.log.log('Updating logged in user info');
 
       const sub = req.userId?.sub;
-
       if (!sub) throw new UnauthorizedException();
 
       const UserAttributes: AttributeType[] = [];
@@ -347,7 +381,8 @@ export class AuthService implements OnModuleInit {
       this.log.log('Updating cognito user');
       await this.client.send(command);
 
-      return await this.usersService.updateUser({ sub, ...dto });
+      this.log.log('Updating user in database');
+      return await this.usersService.updateUser(dto, sub);
     } catch (error) {
       this.log.error(error);
 
@@ -453,7 +488,7 @@ export class AuthService implements OnModuleInit {
 
     const { email } = await this.tokenService.decodeJwt(encodedIdToken);
 
-    return await this.usersService.getUserByEmail(email);
+    return await this.usersService.getUser(email);
   }
 
   // To delete

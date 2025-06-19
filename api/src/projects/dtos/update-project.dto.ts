@@ -1,8 +1,9 @@
-import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ProjectStatus } from '../models/project.entity';
 
 export class UpdateProjectDto {
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   @IsOptional()
   name?: string;

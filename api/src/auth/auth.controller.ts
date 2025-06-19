@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Logger, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UserResponseDto } from '../users/dtos/user-response.dto';
 import { AuthGuard } from './auth.guard';
@@ -9,6 +9,7 @@ import { SignInDto } from './dtos/signin.dto';
 import { SignupResponseDto } from './dtos/signup-response.dto';
 import { SignupDto } from './dtos/signup.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { UserEmailDto } from './dtos/user-email.dto';
 import { VerifyDto } from './dtos/verify.dto';
 import { Role } from './models/role.enum';
 import { Roles } from './role.decorator';
@@ -64,6 +65,13 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async updateMe(@Body() dto: UpdateUserDto, @Req() req: Request): Promise<UserResponseDto> {
     return await this.authService.updateLoggedInUserInfo(dto, req);
+  }
+
+  @Patch('user/:email')
+  @Roles(Role.User, Role.Admin)
+  @UseGuards(AuthGuard)
+  async updateUser(@Param() params: UserEmailDto, @Body() dto: UpdateUserDto): Promise<UserResponseDto> {
+    return await this.authService.updateUser(params.email, dto);
   }
 
   @Delete('me')

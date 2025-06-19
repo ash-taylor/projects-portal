@@ -1,18 +1,23 @@
 import { useCollection } from '@cloudscape-design/collection-hooks';
 import {
+  Alert,
   Badge,
   Button,
   CollectionPreferences,
   type CollectionPreferencesProps,
   Header,
+  Input,
   Pagination,
+  Select,
+  type SelectProps,
   SpaceBetween,
   Table,
+  type TableProps,
   TextFilter,
 } from '@cloudscape-design/components';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { apiClient } from '../../api';
-import { useAuth } from '../../context/auth/AuthContext';
+import { useAuth } from '../../context/auth/authContext';
 import { useSplitPanel } from '../../context/split-panel/SplitPanelContext';
 import { buildError } from '../../helpers/buildError';
 import { buildAuthorizedOptions, getMatchesCountText, parseStatus } from '../../helpers/helpers';
@@ -23,28 +28,41 @@ import {
 } from '../../helpers/tablePreferences';
 import { Roles } from '../../models/Roles';
 import { isUserAuthorized } from '../auth/helpers/helpers';
+import ConfirmModal from '../global/ConfirmModal';
 import EmptyState from '../global/EmptyState';
 import { ErrorBox } from '../global/ErrorBox';
 import type { IProjectResponse } from '../projects/models/IProjectResponse';
 import SplitPanelContent from '../split-panel/SplitPanelContent';
 import type { IUserResponse } from './models/IUserResponse';
+import type { IUserUpdate } from './models/IUserUpdate';
 
 const ViewUsersPage = () => {
   const { user } = useAuth();
   const { updateHeader, updateContent, openSplitPanel, closeSplitPanel, open } = useSplitPanel();
 
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<Error>();
+  const [alert, setAlert] = useState<ReactNode>(null);
+
+  const [modalTitle, setModalTitle] = useState<string>('');
+  const [modalContent, setModalContent] = useState<ReactNode>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalItemId, setModalItemId] = useState<string>('');
 
   const [data, setData] = useState<IUserResponse[]>([]);
+  const [projectsData, setProjectsData] = useState<IProjectResponse[]>([]);
+
+  const updateModalVisible = (visible: boolean) => setModalVisible(visible);
 
   const contentDisplay = [
-    { id: 'name', visible: true, admin: false },
+    { id: 'firstName', visible: true, admin: false },
+    { id: 'lastName', visible: true, admin: false },
     { id: 'email', visible: true, admin: false },
+    { id: 'project', visible: true, admin: false },
     { id: 'active', visible: true, admin: false },
     { id: 'admin', visible: true, admin: false },
-    { id: 'project', visible: true, admin: false },
-    { id: 'delete', visible: true, admin: true },
+    { id: 'actions', visible: true, admin: true },
   ];
   const authorizedContentDisplay = buildAuthorizedOptions(contentDisplay, user);
   const [preferences, setPreferences] = useState<CollectionPreferencesProps.Preferences>({
@@ -57,8 +75,9 @@ const ViewUsersPage = () => {
   });
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchUserData() {
       try {
+        setLoading(true);
         const response = await apiClient.makeRequest<IUserResponse[]>('/users', { method: 'get' }, true);
         setData(response.data);
       } catch (error) {
@@ -68,16 +87,46 @@ const ViewUsersPage = () => {
       }
     }
 
-    fetchData();
+    async function fetchProjectsData() {
+      try {
+        setLoading(true);
+        const response = await apiClient.makeRequest<IProjectResponse[]>('/projects', { method: 'get' }, true);
+        setProjectsData(response.data);
+      } catch (error) {
+        setError(buildError(error));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserData();
+    fetchProjectsData();
   }, []);
 
-  const columnDefinitions = [
+  const columnDefinitions: (TableProps.ColumnDefinition<IUserResponse> & { admin: boolean })[] = [
     {
-      id: 'name',
-      header: 'Name',
-      cell: (item: IUserResponse) => <h4>{`${item.firstName} ${item.lastName}`}</h4>,
+      id: 'firstName',
+      header: 'First Name',
+      cell: (item: IUserResponse) => <strong>{item.firstName}</strong>,
       sortingField: 'name',
       admin: false,
+      editConfig: {
+        editingCell: (item: IUserResponse, { currentValue, setValue }) => (
+          <Input autoFocus value={currentValue ?? item.details} onChange={({ detail }) => setValue(detail.value)} />
+        ),
+      },
+    },
+    {
+      id: 'lastName',
+      header: 'Last Name',
+      cell: (item: IUserResponse) => <strong>{item.lastName}</strong>,
+      sortingField: 'name',
+      admin: false,
+      editConfig: {
+        editingCell: (item: IUserResponse, { currentValue, setValue }) => (
+          <Input autoFocus value={currentValue ?? item.details} onChange={({ detail }) => setValue(detail.value)} />
+        ),
+      },
     },
     {
       id: 'email',
@@ -89,6 +138,7 @@ const ViewUsersPage = () => {
     {
       id: 'admin',
       header: 'Admin',
+      maxWidth: 100,
       cell: (item: IUserResponse) => (
         <Badge color={item.userRoles.includes(Roles.ADMIN) ? 'blue' : 'grey'}>
           {item.userRoles.includes(Roles.ADMIN) ? 'Yes' : 'No'}
@@ -100,6 +150,7 @@ const ViewUsersPage = () => {
     {
       id: 'active',
       header: 'Active',
+      maxWidth: 100,
       cell: (item: IUserResponse) => (
         <Badge color={item.active ? 'green' : 'red'}>{item.active ? 'Active' : 'Inactive'}</Badge>
       ),
@@ -109,13 +160,39 @@ const ViewUsersPage = () => {
     {
       id: 'project',
       header: 'Current Project',
+      minWidth: 200,
       cell: (item: IUserResponse) => item.project?.name || 'No current project',
       sortingField: 'active',
       admin: false,
+      editConfig: {
+        editingCell: (item: IUserResponse, { currentValue, setValue }) => {
+          const options: SelectProps.Option[] = [
+            ...projectsData.map((project) => ({
+              label: project.name,
+              value: project.id,
+              iconName: undefined,
+            })),
+            ...(item.project
+              ? [{ label: 'Unassign project', value: 'null', iconName: 'remove' } as SelectProps.Option]
+              : []),
+          ];
+
+          return (
+            <Select
+              autoFocus
+              expandToViewport
+              options={options}
+              onChange={({ detail }) => setValue(detail.selectedOption.value)}
+              selectedOption={options.find((option) => option.value === (currentValue ?? item.active)) ?? null}
+              placeholder="Select a project"
+            />
+          );
+        },
+      },
     },
     {
-      id: 'delete',
-      header: '',
+      id: 'actions',
+      header: 'Actions',
       cell: (item: IUserResponse) => (
         <Button
           variant="inline-link"
@@ -123,8 +200,10 @@ const ViewUsersPage = () => {
           disabledReason="You can only remove your own account through the profile menu"
           iconName="remove"
           iconAlign="left"
-          onClick={() => handleDeleteUser(item.email)}
-        />
+          onClick={() => handleDeleteRequest(item.email, `${item.firstName} ${item.lastName}`)}
+        >
+          Delete
+        </Button>
       ),
       admin: true,
     },
@@ -152,67 +231,68 @@ const ViewUsersPage = () => {
   const handleSelectionChange = (event: { detail: { selectedItems: IUserResponse[] } }) => {
     const { selectedItems } = event.detail;
 
-    if (selectedItems.length === 1) {
-      const selectedUser = selectedItems[0];
-      const userName = `${selectedUser.firstName} ${selectedUser.lastName}`;
-      const userProject: IProjectResponse | undefined = selectedUser.project;
+    if (selectedItems.length !== 1 || !selectedItems[0]) return closeSplitPanel();
 
-      const keyValueItems = [
-        {
-          label: 'First Name',
-          value: selectedUser.firstName,
-        },
-        {
-          label: 'Last Name',
-          value: selectedUser.lastName,
-        },
-        {
-          label: 'E-mail',
-          value: selectedUser.email,
-          info: (
-            <Badge color={selectedUser.active ? 'green' : 'red'}>{selectedUser.active ? 'Active' : 'Inactive'}</Badge>
-          ),
-        },
-        ...(userProject
-          ? [
-              {
-                label: 'Project Name',
-                value: userProject.name,
-              },
-              {
-                label: 'Project Status',
-                value: parseStatus(userProject.status),
-              },
-              {
-                label: 'Project Details',
-                value: userProject.details || 'No details available',
-              },
-            ]
-          : []),
-        ...(userProject?.customer
-          ? [
-              {
-                label: 'Customer',
-                value: userProject.customer.name,
-              },
-              {
-                label: 'Customer Details',
-                value: userProject.customer.details || 'No details available',
-              },
-            ]
-          : []),
-      ];
+    const selectedUser = selectedItems[0];
+    const userName = `${selectedUser.firstName} ${selectedUser.lastName}`;
+    const userProject: IProjectResponse | undefined = selectedUser.project;
 
-      if (userProject) updateHeader(userName);
-      updateContent(
-        <SpaceBetween size="s">
-          <SplitPanelContent<IUserResponse> keyValueItems={keyValueItems} contentType="users" />
-        </SpaceBetween>,
-      );
-      openSplitPanel();
-    } else {
-      closeSplitPanel();
-    }
+    updateHeader(userName);
+    updateContent(
+      <SpaceBetween size="s" key={`user-${selectedItems[0].email}-${Date.now()}`}>
+        <SplitPanelContent<IUserResponse>
+          contentType="users"
+          keyValueItems={[
+            {
+              label: 'First Name',
+              value: selectedUser.firstName,
+            },
+            {
+              label: 'Last Name',
+              value: selectedUser.lastName,
+            },
+            {
+              label: 'E-mail',
+              value: selectedUser.email,
+              info: (
+                <Badge color={selectedUser.active ? 'green' : 'red'}>
+                  {selectedUser.active ? 'Active' : 'Inactive'}
+                </Badge>
+              ),
+            },
+            ...(userProject
+              ? [
+                  {
+                    label: 'Project Name',
+                    value: userProject.name,
+                  },
+                  {
+                    label: 'Project Status',
+                    value: parseStatus(userProject.status),
+                  },
+                  {
+                    label: 'Project Details',
+                    value: userProject.details || 'No details available',
+                  },
+                ]
+              : []),
+            ...(userProject?.customer
+              ? [
+                  {
+                    label: 'Customer',
+                    value: userProject.customer.name,
+                  },
+                  {
+                    label: 'Customer Details',
+                    value: userProject.customer.details || 'No details available',
+                  },
+                ]
+              : []),
+          ]}
+        />
+      </SpaceBetween>,
+    );
+    openSplitPanel();
 
     if (collectionProps.onSelectionChange) {
       collectionProps.onSelectionChange(event);
@@ -225,13 +305,32 @@ const ViewUsersPage = () => {
     }
   }, [collectionProps, open, selectedItems?.length]);
 
+  const handleDeleteRequest = (userEmail: string, userName: string) => {
+    setModalTitle(`Are you sure you want to delete "${userName}"?`);
+    setModalContent(
+      <p>
+        <strong>This action cannot be undone.</strong>
+      </p>,
+    );
+    setModalItemId(userEmail);
+    setModalVisible(true);
+  };
+
   const handleDeleteUser = async (userEmail: string) => {
     try {
-      setLoading(true);
       if (!isUserAuthorized(user, [Roles.ADMIN])) throw new Error('Unauthorized');
       if (user?.email === userEmail) throw new Error('You cannot delete your own account');
+
+      setLoading(true);
+
       await apiClient.makeRequest(`/auth/user?email=${encodeURIComponent(userEmail)}`, { method: 'delete' }, true);
       setData(data.filter((item) => item.email !== userEmail));
+      setAlert(
+        <Alert type="success" dismissible onDismiss={() => setAlert(null)}>
+          User deleted successfully
+        </Alert>,
+      );
+      closeSplitPanel();
     } catch (error) {
       setError(buildError(error));
     } finally {
@@ -239,31 +338,73 @@ const ViewUsersPage = () => {
     }
   };
 
+  const handleEditSubmit = async (
+    currentItem: IUserResponse,
+    column: TableProps.ColumnDefinition<IUserResponse>,
+    value: unknown,
+  ) => {
+    try {
+      if (!isUserAuthorized(user, [Roles.ADMIN])) throw new Error('Unauthorized');
+      if (!column.id) throw new Error('Column ID is undefined');
+
+      closeSplitPanel();
+      setSubmitting(true);
+
+      const response = await apiClient.makeRequest<IUserResponse, IUserUpdate>(
+        `auth/user/${currentItem.email}`,
+        {
+          method: 'patch',
+          data: {
+            [column.id]: value === 'null' ? null : value,
+          },
+        },
+        true,
+      );
+
+      const newItem = response.data;
+      const fullCollection = data;
+
+      setData(fullCollection.map((item) => (item.email === currentItem.email ? newItem : item)));
+      setAlert(
+        <Alert type="success" dismissible={true} onDismiss={() => setAlert(null)}>
+          User updated successfully
+        </Alert>,
+      );
+    } catch (error) {
+      setError(buildError(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const renderAlert = () => alert;
+
   const renderError = () => error && <ErrorBox error={error} onDismiss={() => setError(undefined)} />;
 
   const renderUsersTable = () => (
     <Table
       {...collectionProps}
+      submitEdit={handleEditSubmit}
       onSelectionChange={handleSelectionChange}
-      enableKeyboardNavigation={true}
+      enableKeyboardNavigation
       items={items}
       columnDefinitions={authorizedColumnDefinitions}
       columnDisplay={preferences.contentDisplay}
-      stickyHeader={true}
-      resizableColumns={true}
+      stickyHeader
       selectionType="single"
       header={
         <Header variant="h1" counter={`(${data.length})`}>
           Users
         </Header>
       }
-      pagination={<Pagination {...paginationProps} ariaLabels={paginationLabels} />}
+      pagination={<Pagination {...paginationProps} ariaLabels={paginationLabels} disabled={loading || submitting} />}
       filter={
         <TextFilter
           {...filterProps}
-          filteringPlaceholder="Filter customers"
+          filteringPlaceholder="Filter users"
           countText={getMatchesCountText(filteredItemsCount)}
-          filteringAriaLabel={'Filter customers'}
+          filteringAriaLabel={'Filter users'}
+          disabled={loading || submitting}
         />
       }
       preferences={
@@ -271,6 +412,7 @@ const ViewUsersPage = () => {
           {...collectionPreferencesProps}
           preferences={preferences}
           onConfirm={({ detail }) => setPreferences(detail)}
+          disabled={loading || submitting}
         />
       }
       variant="embedded"
@@ -283,7 +425,22 @@ const ViewUsersPage = () => {
     />
   );
 
-  return <>{error ? renderError() : renderUsersTable()}</>;
+  return (
+    <>
+      {error && renderError()}
+      {alert && renderAlert()}
+      <ConfirmModal
+        title={modalTitle}
+        visible={modalVisible}
+        itemId={modalItemId}
+        updateVisible={updateModalVisible}
+        modalAction={handleDeleteUser}
+      >
+        {modalContent}
+      </ConfirmModal>
+      {renderUsersTable()}
+    </>
+  );
 };
 
 export default ViewUsersPage;
