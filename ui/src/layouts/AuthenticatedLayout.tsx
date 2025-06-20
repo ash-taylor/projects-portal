@@ -1,7 +1,6 @@
 import {
   AppLayout,
   type ButtonDropdownProps,
-  HelpPanel,
   SideNavigation,
   type SideNavigationProps,
   SpaceBetween,
@@ -36,6 +35,7 @@ export default function AuthenticatedLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [activeHref, setActiveHref] = useState(location.pathname);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>();
 
@@ -159,16 +159,19 @@ export default function AuthenticatedLayout() {
         maxContentWidth={10000}
         navigation={
           <SideNavigation
+            header={{ href: '/', text: 'Dashboard' }}
+            activeHref={activeHref}
             items={sideMenuOptions}
             onFollow={(event) => {
               if (!event.detail.external) {
                 event.preventDefault();
+                setActiveHref(event.detail.href);
                 navigate(event.detail.href);
               }
             }}
           />
         }
-        tools={<HelpPanel header={<h2>Overview</h2>}>Help content</HelpPanel>}
+        toolsHide
         splitPanelOpen={open}
         splitPanel={
           <SplitPanel hidePreferencesButton={true} header={header} closeBehavior="hide">

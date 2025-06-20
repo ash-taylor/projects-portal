@@ -39,7 +39,7 @@ export class CustomersService {
     try {
       this.log.log('Getting all customers');
 
-      const customers = await this.customersRepository.find({ relations: ['projects'] });
+      const customers = await this.customersRepository.find({ relations: ['projects', 'projects.users'] });
 
       return customers.map((customer) => this._transformCustomerToDto(customer));
     } catch (error) {
