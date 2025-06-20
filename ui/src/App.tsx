@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { ApiExample } from './components/ApiExample';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
 import AddCustomerPage from './components/customers/AddCustomerPage';
 import ViewCustomersPage from './components/customers/ViewCustomersPage';
+import DashboardPage from './components/dashboard/DashboardPage';
 import AddProjectPage from './components/projects/AddProjectPage';
 import ViewProjectsPage from './components/projects/ViewProjectsPage';
 import ViewUsersPage from './components/users/ViewUsersPage';
@@ -23,7 +23,7 @@ function App() {
         <Routes>
           <Route element={<PrivateRoutes />}>
             <Route path="/" element={<AuthenticatedLayout />}>
-              <Route index element={<ApiExample />} />
+              <Route index element={<DashboardPage />} />
               <Route path="/customers" element={<ViewCustomersPage />} />
               <Route path="/projects" element={<ViewProjectsPage />} />
               <Route path="/users" element={<ViewUsersPage />} />
@@ -31,15 +31,13 @@ function App() {
                 <Route path="/customers/create" element={<AddCustomerPage />} />
                 <Route path="/projects/create" element={<AddProjectPage />} />
               </Route>
-              {/* TO DO: Create a not found page */}
-              <Route path="*" element={<ApiExample />} />
+              <Route path="*" element={<DashboardPage />} />
             </Route>
           </Route>
           <Route element={<PublicRoutes />}>
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            {/* TO DO: Create a not found page */}
             <Route path="*" element={<LandingPage />} />
           </Route>
         </Routes>
