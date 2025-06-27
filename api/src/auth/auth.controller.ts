@@ -82,17 +82,9 @@ export class AuthController {
   }
 
   @Delete('user')
-  @Roles(Role.Admin) // Admin only
+  @Roles(Role.Admin)
   @UseGuards(AuthGuard)
   async deleteUser(@Query() dto: DeleteUserDto, @Req() req: Request): Promise<UserResponseDto> {
     return await this.authService.deleteUser(dto.email, req);
-  }
-
-  // TEST ROUTE
-  @Get()
-  @Roles(Role.Admin)
-  @UseGuards(AuthGuard)
-  async getSecret(): Promise<Record<string, string>> {
-    return await this.authService.getSecret();
   }
 }

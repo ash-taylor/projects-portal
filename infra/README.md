@@ -1,8 +1,8 @@
-# Welcome to your CDK TypeScript project
+# Projects Portal TypeScript CDK
 
-This is a blank project for CDK development with TypeScript.
+This package contains the TypeScript Infrastructure as Code for the Projects Portal Application.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+The `cdk.json` file tells the CDK Toolkit how to execute the app.
 
 ## Useful commands
 

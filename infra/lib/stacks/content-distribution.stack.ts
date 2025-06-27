@@ -18,6 +18,7 @@ import { HttpOrigin, S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+import { CfnWebACL } from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
 const solutionRootDir = `${__dirname}/../../../`;
@@ -112,6 +113,74 @@ export class ContentDistributionStack extends Stack {
       removeHeaders: ['server'],
     });
 
+    const cfnWebACL = new CfnWebACL(this, 'projects-portal-web-acl', {
+      defaultAction: {
+        allow: {},
+      },
+      scope: 'CLOUDFRONT',
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'projects-portal-web-acl',
+        sampledRequestsEnabled: true,
+      },
+      rules: [
+        {
+          name: 'ProjectsPortalWebAclCRS',
+          priority: 0,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesCommonRuleSet',
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'projects-portal-web-acl-crs',
+            sampledRequestsEnabled: true,
+          },
+          overrideAction: {
+            none: {},
+          },
+        },
+        {
+          name: 'ProjectsPortalWebAclKnownBadInputs',
+          priority: 1,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesKnownBadInputsRuleSet', // AWS Common rules, see - https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'projects-portal-web-acl-kbi', // AWS Known bad inputs protection
+            sampledRequestsEnabled: true,
+          },
+          overrideAction: {
+            none: {},
+          },
+        },
+        {
+          name: 'ProjectsPortalWebAclSQLi',
+          priority: 2,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesSQLiRuleSet', // AWS SQL Injection protection, see - https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'projects-portal-web-acl-sqli',
+            sampledRequestsEnabled: true,
+          },
+          overrideAction: {
+            none: {},
+          },
+        },
+      ],
+    });
+
     this.cloudfrontDistribution = new Distribution(this, 'projects-portal-web-app-distribution', {
       defaultBehavior: {
         origin: s3Origin,
@@ -131,6 +200,7 @@ export class ContentDistributionStack extends Stack {
         ],
       },
       defaultRootObject: 'index.html',
+      webAclId: cfnWebACL.attrArn,
     });
 
     this.cloudfrontDistribution.addBehavior('/api/*', apiOrigin, {
@@ -145,12 +215,6 @@ export class ContentDistributionStack extends Stack {
       sources: [Source.bucket(source.bucket, source.s3ObjectKey)],
       destinationBucket: websiteBucket,
       distribution: this.cloudfrontDistribution,
-    });
-
-    // Export the URL for reference
-    this.exportValue(this.cloudfrontDistribution.distributionDomainName, {
-      name: 'UICloudfrontDistribution',
-      description: 'URL of the UI Cloudfront Distribution',
     });
   }
 }

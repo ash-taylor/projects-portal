@@ -4,7 +4,6 @@
   "description": "",
   "author": "Ash Taylor",
   "license": "MIT",
-  "main": "index.js",
   "scripts": {
     "initial-setup": "pnpm install-and-audit && pnpm -r build && pnpm -r bundle",
     "install-and-audit": "ADBLOCK=true OPENCOLLECTIVE_HIDE=true pnpm install --frozen-lockfile && pnpm audit --registry=https://registry.npmjs.com/ --audit-level high",
@@ -14,6 +13,7 @@
     "start:api": "cd api && pnpm start:dev",
     "start:ui": "cd ui && pnpm dev",
     "start:local-db": "cd local-db && docker compose up -d",
+    "init:local-db": "pnpm start:local-db && docker exec -i container-pg-local psql -U admin -d ProjectsPortal < ./local-db/init.sql",
     "test": "pnpm -r test",
     "lint": "biome lint --write",
     "format": "biome format --write",

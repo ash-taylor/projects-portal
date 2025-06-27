@@ -23,16 +23,21 @@ function createStageInfra(stage: Stage) {
     env: { region: MAIN_REGION },
   });
 
-  const { apiHandler, apiDomain, cognitoUserPool, cognitoUserPoolClient, apiAppClientSecret } = new BackendStack(
-    stage,
-    'ProjectsPortalBackendStack',
-    {
-      env: { region: MAIN_REGION },
-      crossRegionReferences: true,
-      vpc,
-      lambdaSecurityGroup,
-    },
-  );
+  const {
+    apiHandler,
+    apiDomain,
+    cognitoUserPool,
+    cognitoUserPoolClient,
+    apiAppClientSecret,
+    userPoolId,
+    userPoolClientId,
+    appClientSecretName,
+  } = new BackendStack(stage, 'ProjectsPortalBackendStack', {
+    env: { region: MAIN_REGION },
+    crossRegionReferences: true,
+    vpc,
+    lambdaSecurityGroup,
+  });
 
   const { rdsInstance } = new StorageStack(stage, 'ProjectsPortalStorageStack', {
     env: { region: MAIN_REGION },
@@ -55,6 +60,9 @@ function createStageInfra(stage: Stage) {
     rdsInstance,
     vpc,
     lambdaSecurityGroup,
+    userPoolId,
+    userPoolClientId,
+    appClientSecretName,
     env: { region: MAIN_REGION },
     crossRegionReferences: true,
   });

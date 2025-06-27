@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { CognitoJwtVerifierSingleUserPool } from 'aws-jwt-verify/cognito-verifier';
@@ -42,7 +42,8 @@ export class TokenService implements OnModuleInit {
       return await this.accessTokenVerifier.verify(token);
     } catch (error: unknown) {
       this.log.error(error);
-      throw error;
+
+      throw new UnauthorizedException();
     }
   }
 

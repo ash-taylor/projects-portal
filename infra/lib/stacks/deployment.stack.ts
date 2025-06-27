@@ -1,4 +1,4 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Function as LambdaFunction } from 'aws-cdk-lib/aws-lambda';
 import { DatabaseInstance } from 'aws-cdk-lib/aws-rds';
@@ -14,6 +14,7 @@ export type ApiHandlerEnv = {
   COGNITO_CLIENT_SECRET_NAME: string;
   RDS_SECRET_ID: string;
   ENVIRONMENT: string;
+  NODE_ENV: string;
 };
 
 export interface DeploymentStackProps extends StackProps {
@@ -25,6 +26,9 @@ export interface DeploymentStackProps extends StackProps {
   cognitoUserPoolId: string;
   cognitoUserPoolClientId: string;
   cognitoUserPoolClientSecretId: string;
+  userPoolId: string;
+  userPoolClientId: string;
+  appClientSecretName: string;
 }
 
 export class DeploymentStack extends Stack {
@@ -43,6 +47,7 @@ export class DeploymentStack extends Stack {
       COGNITO_CLIENT_SECRET_NAME: props.cognitoUserPoolClientSecretId,
       RDS_SECRET_ID: props.rdsInstance.secret!.secretName,
       ENVIRONMENT: 'production',
+      NODE_ENV: 'production',
     };
 
     props.rdsInstance.secret!.grantRead(props.apiHandlerLambda.role!);
@@ -56,6 +61,30 @@ export class DeploymentStack extends Stack {
       rdsInstanceSecret: props.rdsInstance.secret!,
       vpc: props.vpc,
       lambdaSecurityGroup: props.lambdaSecurityGroup,
+    });
+
+    new CfnOutput(this, 'projects-portal-user-pool-id', {
+      key: 'UserPoolId',
+      value: props.userPoolId,
+      description: 'Cognito User Pool ID',
+    });
+
+    new CfnOutput(this, 'projects-portal-app-client-id', {
+      key: 'AppClientId',
+      value: props.userPoolClientId,
+      description: 'App client id for the projects portal user pool',
+    });
+
+    new CfnOutput(this, 'projects-portal-api-client-secret-name', {
+      key: 'AppClientSecretName',
+      value: props.appClientSecretName,
+      description: 'Name of the App Client secret',
+    });
+
+    new CfnOutput(this, 'projects-portal-distribution-domain', {
+      key: 'DistributionDomain',
+      value: props.cloudFrontDistributionDomain,
+      description: 'URL of the UI Cloudfront Distribution',
     });
   }
 }

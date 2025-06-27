@@ -20,5 +20,16 @@
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "cSpell.words": ["codegenie"]
+  "cSpell.words": [
+    "codegenie",
+    "containerised",
+    "Initialisation",
+    "initialise",
+    "OPENCOLLECTIVE",
+    "psql",
+    "RDBMS",
+    "utilise",
+    "Utilised",
+    "utilises"
+  ]
 }

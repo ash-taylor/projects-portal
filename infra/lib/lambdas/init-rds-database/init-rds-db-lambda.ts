@@ -18,30 +18,28 @@ export async function handler(event: CloudFormationCustomResourceEvent) {
 }
 
 async function initRdsInstance(props: InitRdsDBHandlerProps) {
-  const { secretId } = props;
-
-  const response = await client.send(
-    new GetSecretValueCommand({
-      SecretId: secretId,
-    }),
-  );
-
-  if (!response.SecretString) throw new Error('RDS Secret not found');
-
-  const { dbname, username, password, host, port } = JSON.parse(response.SecretString);
-
-  const sql = postgres({
-    host,
-    port,
-    username,
-    password,
-    database: dbname,
-    ssl: { rejectUnauthorized: false },
-  });
-
-  const result = await sql`SELECT 'HELLO WORLD' as message;`;
-
   try {
+    const { secretId } = props;
+
+    const response = await client.send(
+      new GetSecretValueCommand({
+        SecretId: secretId,
+      }),
+    );
+
+    if (!response.SecretString) throw new Error('RDS Secret not found');
+
+    const { dbname, username, password, host, port } = JSON.parse(response.SecretString);
+
+    const sql = postgres({
+      host,
+      port,
+      username,
+      password,
+      database: dbname,
+      ssl: { rejectUnauthorized: false },
+    });
+
     await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
     await sql`DROP TABLE IF EXISTS "user";`;
     await sql`DROP TABLE IF EXISTS project;`;
@@ -49,7 +47,7 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
     await sql`DROP TYPE IF EXISTS project_status;`;
     await sql`DROP TYPE IF EXISTS user_role;`;
 
-    await sql`CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'on_hold');`;
+    await sql`CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'on_hold', 'cancelled');`;
     await sql`CREATE TYPE user_role AS ENUM ('user', 'admin');`;
 
     await sql`
@@ -91,14 +89,14 @@ async function initRdsInstance(props: InitRdsDBHandlerProps) {
     await sql`CREATE INDEX idx_user_sub ON "user" (sub);`;
     await sql`CREATE INDEX idx_user_roles ON "user" (user_roles);`;
     await sql`CREATE INDEX idx_user_email ON "user" (email);`;
+
+    return {
+      status: 'OK',
+      message: 'SUCCESS',
+    };
   } catch (error: unknown) {
     // biome-ignore lint/suspicious/noConsole: <explanation>
     console.error('Error initializing database schema', error);
     throw error;
   }
-
-  return {
-    status: 'OK',
-    message: result[0].message,
-  };
 }
