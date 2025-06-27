@@ -31,12 +31,17 @@ export class BackendStack extends Stack {
   public readonly apiAppClientSecret: Secret;
   public readonly cognitoUserPool: UserPool;
   public readonly cognitoUserPoolClient: UserPoolClient;
+  public readonly userPoolId: string;
+  public readonly userPoolClientId: string;
+  public readonly appClientSecretName: string;
 
   constructor(scope: Construct, id: string, props: BackendStackProps) {
     super(scope, id, {
       ...props,
       description: 'Contains backend API GW, API Handler and Cognito Resources',
     });
+
+    this.appClientSecretName = 'projects-portal-api-client-secret';
 
     // BACKEND - API
     this.apiHandler = new LambdaFunction(this, 'api-handler', {
@@ -144,10 +149,13 @@ export class BackendStack extends Stack {
     );
 
     this.apiAppClientSecret = new Secret(this, 'projects-portal-api-client-secret', {
-      secretName: 'projects-portal-api-client-secret',
+      secretName: this.appClientSecretName,
       secretStringValue: this.cognitoUserPoolClient.userPoolClientSecret,
       removalPolicy: RemovalPolicy.DESTROY,
     });
     this.apiAppClientSecret.grantRead(this.apiHandler.role!);
+
+    this.userPoolId = this.cognitoUserPool.userPoolId;
+    this.userPoolClientId = this.cognitoUserPoolClient.userPoolClientId;
   }
 }

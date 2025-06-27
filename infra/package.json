@@ -1,6 +1,8 @@
 {
   "name": "infra",
   "version": "1.0.0",
+  "description": "The CDK infrastructure for the Projects Portal Application",
+  "author": "Ashley Taylor",
   "main": "lib/index.ts",
   "scripts": {
     "compile": "tsc",

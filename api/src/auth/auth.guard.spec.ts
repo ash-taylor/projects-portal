@@ -94,16 +94,16 @@ describe('AuthGuard', () => {
       } as unknown as ExecutionContext;
 
       mockTokenService.extractTokenFromHeader.mockReturnValue('invalid-token');
-      mockTokenService.verifyAccessToken.mockRejectedValue(new Error('Invalid token'));
+      mockTokenService.verifyAccessToken.mockRejectedValue(new UnauthorizedException());
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw UnauthorizedException when user does not have required role', async () => {
+    it('should return false when user does not have required role', async () => {
       const mockContext = {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
-            headers: { authorization: 'Bearer token' },
+            headers: { access_token: 'Access token' },
           }),
         }),
         getHandler: jest.fn(),
@@ -116,7 +116,7 @@ describe('AuthGuard', () => {
         'cognito:groups': [Role.User],
       });
 
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext)).resolves.toBe(false);
     });
 
     it('should return true when no roles are required', async () => {

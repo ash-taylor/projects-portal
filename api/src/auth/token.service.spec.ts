@@ -1,3 +1,4 @@
+import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as awsJwtVerify from 'aws-jwt-verify';
@@ -84,7 +85,7 @@ describe('TokenService', () => {
       });
 
       service.onModuleInit();
-      await expect(service.verifyAccessToken('invalid-token')).rejects.toThrow('Invalid token');
+      await expect(service.verifyAccessToken('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -114,7 +115,7 @@ describe('TokenService', () => {
 
   describe('decodeJwt', () => {
     it('should decode a valid JWT token', () => {
-      // This is a sample JWT with payload { "sub": "test-user", "name": "Test User" }
+      // Sample JWT with payload { "sub": "test-user", "name": "Test User" }
       const token =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJuYW1lIjoiVGVzdCBVc2VyIn0.KxByF3yAqJPE6GbHeDGXbUjCFBJ-vxYl-PVG5qBKwmg';
 

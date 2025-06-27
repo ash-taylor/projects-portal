@@ -494,12 +494,6 @@ export class AuthService implements OnModuleInit {
     return await this.usersService.getUser(email);
   }
 
-  // To delete
-  async getSecret(): Promise<Record<string, string>> {
-    const secret = this.cognitoAppClientSecret;
-    return { secret };
-  }
-
   private async getUser(email: string) {
     try {
       this.log.log('Getting user');

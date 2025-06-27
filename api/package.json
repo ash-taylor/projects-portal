@@ -1,8 +1,8 @@
 {
   "name": "api",
   "version": "1.0.0",
-  "description": "",
-  "author": "",
+  "description": "Projects Portal NestJS backend web application server",
+  "author": "Ashley Taylor",
   "private": true,
   "license": "MIT",
   "main": "dist/index.js",

@@ -2,6 +2,8 @@
   "name": "ui",
   "private": true,
   "version": "1.0.0",
+  "description": "The Projects Portal React UI Web Application",
+  "author": "Ashley Taylor",
   "type": "module",
   "scripts": {
     "dev": "vite",

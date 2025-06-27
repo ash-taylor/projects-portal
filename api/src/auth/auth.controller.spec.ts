@@ -260,17 +260,4 @@ describe('AuthController', () => {
       expect(result).toEqual(expectedResponse);
     });
   });
-
-  describe('getSecret', () => {
-    it('should call authService.getSecret', async () => {
-      const expectedResponse = { secret: 'test-secret' };
-
-      mockAuthService.getSecret.mockResolvedValue(expectedResponse);
-
-      const result = await controller.getSecret();
-
-      expect(authService.getSecret).toHaveBeenCalled();
-      expect(result).toEqual(expectedResponse);
-    });
-  });
 });
